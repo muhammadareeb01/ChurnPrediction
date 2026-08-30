@@ -1,0 +1,23 @@
+# Core Data Science & Manipulation
+pandas>=2.0.0
+numpy>=1.24.0
+openpyxl>=3.1.0
+
+# Machine Learning & Evaluation
+scikit-learn>=1.3.0
+
+# Explainability & Interpretable ML (Microsoft EBM)
+interpret>=0.6.0
+
+# Web Application & Interactive Visuals
+streamlit>=1.30.0
+plotly>=5.18.0
+
+# Visualization & Reporting
+matplotlib>=3.7.0
+seaborn>=0.12.0
+reportlab>=4.0.0
+
+# Deep Learning & Advanced Imputation
+torch>=2.0.0
+

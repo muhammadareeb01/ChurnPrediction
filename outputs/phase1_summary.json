@@ -1,0 +1,20 @@
+{
+    "project_title": "A User-Centric Business Intelligence Framework for Predictive Customer Churn in E-Commerce",
+    "student": "Muhammad Tehmas (25MEIT003)",
+    "university": "Mehran University of Engineering and Technology (MUET)",
+    "supervisors": "Prof. Dr. Shahnawaz Talpur | Co-Supervisor: Engr. Madeha Memon",
+    "dataset_name": "EasyBazar E-Commerce Customer Churn Dataset (SME Baseline)",
+    "initial_records": 2000,
+    "total_features": 15,
+    "target_variable": "Churn (1 = Churned, 0 = Retained)",
+    "overall_churn_rate_pct": 32.25,
+    "missing_values_detected": {},
+    "imputation_strategy": "Hybrid PyTorch Denoising Autoencoder (Learn distributions, fallback to Median). Retains glassbox original features.",
+    "imputation_log": {},
+    "encoding_strategy": "No One-Hot Encoding (Categorical text preserved for Explainable Boosting Machine interpretability)",
+    "train_test_split_strategy": "80/20 Stratified Split",
+    "train_records": 1600,
+    "test_records": 400,
+    "train_churn_rate_pct": 32.25,
+    "test_churn_rate_pct": 32.25
+}
