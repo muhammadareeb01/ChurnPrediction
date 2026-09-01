@@ -863,8 +863,15 @@ elif navigation == "⚙️ Data Hub & AI Retraining":
         uploaded_file = st.file_uploader("Drag and drop your file here", type=['csv', 'xlsx'], label_visibility="collapsed")
         
         if uploaded_file is not None:
-            if st.button("🚀 Merge Data & Generate AI Predictions", type="primary", use_container_width=True):
-                with st.status("Initializing Data Merge & AI Predictions...", expanded=True) as status:
+            col_b1, col_b2 = st.columns(2)
+            with col_b1:
+                btn_replace = st.button("🔄 Replace Entire Database", use_container_width=True)
+            with col_b2:
+                btn_merge = st.button("➕ Merge with Existing Data", type="primary", use_container_width=True)
+                
+            if btn_replace or btn_merge:
+                action_name = "Replacement" if btn_replace else "Merge"
+                with st.status(f"Initializing Data {action_name} & AI Predictions...", expanded=True) as status:
                     try:
                         # 1. Read New Data
                         st.write("📂 Reading new uploaded data...")
@@ -873,23 +880,28 @@ elif navigation == "⚙️ Data Hub & AI Retraining":
                         else:
                             df_new = pd.read_excel(uploaded_file)
                             
-                        # 2. Load Existing Data
-                        st.write("💾 Loading master database...")
                         master_path = "EasyBazar_EBM_Dataset.xlsx"
-                        if os.path.exists(master_path):
-                            df_existing = pd.read_excel(master_path)
+                        
+                        if btn_replace:
+                            st.write("🗑️ Overwriting master database with new data...")
+                            final_df = df_new
                         else:
-                            df_existing = pd.DataFrame()
-                            
-                        # 3. Merge and drop duplicates
-                        st.write("🔗 Merging and resolving duplicates (keeping latest)...")
-                        merged_df = pd.concat([df_existing, df_new], ignore_index=True)
-                        if 'CustomerID' in merged_df.columns:
-                            merged_df = merged_df.drop_duplicates(subset=['CustomerID'], keep='last')
-                            
+                            # 2. Load Existing Data
+                            st.write("💾 Loading master database...")
+                            if os.path.exists(master_path):
+                                df_existing = pd.read_excel(master_path)
+                            else:
+                                df_existing = pd.DataFrame()
+                                
+                            # 3. Merge and drop duplicates
+                            st.write("🔗 Merging and resolving duplicates (keeping latest)...")
+                            final_df = pd.concat([df_existing, df_new], ignore_index=True)
+                            if 'CustomerID' in final_df.columns:
+                                final_df = final_df.drop_duplicates(subset=['CustomerID'], keep='last')
+                                
                         # 4. Save Master File
                         st.write("💾 Saving updated master database...")
-                        merged_df.to_excel(master_path, index=False)
+                        final_df.to_excel(master_path, index=False)
                         
                         # 5. Trigger AI Prediction
                         st.write("🧠 Generating new AI Churn Predictions via Kaggle Model...")
@@ -901,8 +913,8 @@ elif navigation == "⚙️ Data Hub & AI Retraining":
                         process.wait()
                         
                         if process.returncode == 0:
-                            status.update(label="AI Predictions Generated Successfully!", state="complete", expanded=False)
-                            st.success("✅ Dataset merged and AI predictions updated successfully! The dashboard has been updated with the latest intelligence.")
+                            status.update(label=f"AI Predictions Generated ({action_name} Complete)!", state="complete", expanded=False)
+                            st.success(f"✅ Dataset {action_name.lower()}ed and AI predictions updated successfully! The dashboard is live.")
                             st.balloons()
                             time.sleep(2)
                             st.cache_data.clear() # Clear memory so UI pulls the new CSV!
@@ -923,10 +935,10 @@ elif navigation == "⚙️ Data Hub & AI Retraining":
         st.markdown("""
         <ul style="font-size: 0.82rem; color: #475569; line-height: 1.6; padding-left: 1.2rem;">
             <li><b>1. Upload:</b> Drop your new month's transaction data (CSV or Excel).</li>
-            <li><b>2. Smart Merge:</b> The system seamlessly combines it with your existing <code>EasyBazar_EBM_Dataset.xlsx</code>.</li>
-            <li><b>3. Duplicate Handling:</b> If a customer made a new purchase, their old record is replaced with the latest one to keep RFM scores accurate (based on CustomerID).</li>
-            <li><b>4. Auto-Imputation:</b> The PyTorch Autoencoder detects and fixes any missing values in the new data.</li>
-            <li><b>5. Model Update:</b> The Glassbox EBM model relearns customer behavior patterns and dynamically updates all dashboard metrics.</li>
+            <li><b>2. Choose Action:</b> Decide whether to <b>Replace</b> the entire database (start fresh) or <b>Merge</b> with existing records.</li>
+            <li><b>3. Duplicate Handling (Merge Mode):</b> If a customer made a new purchase, their old record is replaced with the latest one to keep RFM scores accurate.</li>
+            <li><b>4. AI Intelligence:</b> The system runs the uploaded data against the trained Kaggle patterns to independently generate <code>Churn AI ML</code> predictions.</li>
+            <li><b>5. Dynamic Refresh:</b> All dashboard charts, KPI metrics, and Retargeting Action Center tables instantly update.</li>
         </ul>
         """, unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
