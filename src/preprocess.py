@@ -44,15 +44,9 @@ def engineer_rfm_features(df: pd.DataFrame) -> pd.DataFrame:
     return df_feat
 
 def load_data(file_path: str = None, sheet_name: str = None) -> pd.DataFrame:
-    """Loads the raw e-commerce dataset from Excel (EasyBazar or fallback)."""
+    """Loads the raw Kaggle e-commerce dataset from Excel for Training."""
     if file_path is None:
-        if os.path.exists('EasyBazar_EBM_Dataset.xlsx'):
-            file_path = 'EasyBazar_EBM_Dataset.xlsx'
-            sheet_name = 'EBM_Churn_Data'
-        elif os.path.exists(os.path.join('data', 'raw', 'EasyBazar_EBM_Dataset.xlsx')):
-            file_path = os.path.join('data', 'raw', 'EasyBazar_EBM_Dataset.xlsx')
-            sheet_name = 'EBM_Churn_Data'
-        elif os.path.exists(os.path.join('data', 'raw', 'E Commerce Dataset.xlsx')):
+        if os.path.exists(os.path.join('data', 'raw', 'E Commerce Dataset.xlsx')):
             file_path = os.path.join('data', 'raw', 'E Commerce Dataset.xlsx')
             sheet_name = 'E Comm'
         else:
@@ -60,9 +54,9 @@ def load_data(file_path: str = None, sheet_name: str = None) -> pd.DataFrame:
             sheet_name = 'E Comm'
     
     if sheet_name is None:
-        sheet_name = 'EBM_Churn_Data' if 'EasyBazar' in file_path else 'E Comm'
+        sheet_name = 'E Comm'
 
-    print(f"[*] Loading dataset from: {file_path} (Sheet: '{sheet_name}')...")
+    print(f"[*] Loading training dataset from: {file_path} (Sheet: '{sheet_name}')...")
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"Dataset not found at {file_path}")
     df = pd.read_excel(file_path, sheet_name=sheet_name)

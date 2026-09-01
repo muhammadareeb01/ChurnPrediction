@@ -422,7 +422,7 @@ if sel_cities and 'CityTier' in df_filtered.columns:
 if sel_prods and 'ProductName' in df_filtered.columns:
     df_filtered = df_filtered[df_filtered['ProductName'].isin(sel_prods)]
 
-pred_col = 'AI_Churn_Prediction' if 'AI_Churn_Prediction' in df_filtered.columns else ('Churn' if 'Churn' in df_filtered.columns else None)
+pred_col = 'Churn AI ML' if 'Churn AI ML' in df_filtered.columns else ('Churn' if 'Churn' in df_filtered.columns else None)
 
 if risk_filter == "🚨 At-Risk Churners Only" and pred_col:
     df_filtered = df_filtered[df_filtered[pred_col] == 1]
@@ -586,7 +586,7 @@ elif navigation == "🎯 Retargeting Action Center":
     preferred_cols = [
         'CustomerID', 'CustomerName', 'ProductName', 'COD_Amount', 
         'Tenure', 'DaySinceLastOrder', 'OrderCount', 'Complain', 
-        'RFM_Recency', 'Engagement_Score', 'AI_Churn_Prediction', 'Churn_Probability'
+        'RFM_Recency', 'Engagement_Score', 'Churn AI ML', 'Churn_Probability'
     ]
     show_cols = [c for c in preferred_cols if c in df_filtered.columns]
     
@@ -630,7 +630,7 @@ elif navigation == "🎯 Retargeting Action Center":
         table_html += "<th>Status</th><th>Churn Prob</th></tr></thead><tbody>"
         
         for _, r in display_df.head(25).iterrows():
-            is_risk = r.get('AI_Churn_Prediction', 0) == 1
+            is_risk = r.get('Churn AI ML', 0) == 1
             status_badge = '<span class="badge badge-churn"><span class="pulse-dot pulse-red"></span> At Risk</span>' if is_risk else '<span class="badge badge-safe"><span class="pulse-dot pulse-green"></span> Safe</span>'
             prob_val = f"{r.get('Churn_Probability', 0)}%" if 'Churn_Probability' in r else ("High" if is_risk else "Low")
             
@@ -671,7 +671,7 @@ elif navigation == "🎯 Retargeting Action Center":
                 st.markdown("<div class='react-card'>", unsafe_allow_html=True)
                 st.markdown("<div class='react-card-title'><i class='fa-solid fa-id-card' style='color:#2563EB;'></i> Customer Snapshot</div>", unsafe_allow_html=True)
                 
-                is_churner = cust_data.get('AI_Churn_Prediction', 0) == 1
+                is_churner = cust_data.get('Churn AI ML', 0) == 1
                 badge_html = '<span class="badge badge-churn"><span class="pulse-dot pulse-red"></span> AT RISK (CHURNING)</span>' if is_churner else '<span class="badge badge-safe"><span class="pulse-dot pulse-green"></span> SAFE (RETAINED)</span>'
                 
                 st.markdown(f"**Status:** {badge_html}", unsafe_allow_html=True)
@@ -747,24 +747,35 @@ elif navigation == "📖 Project Methodology & Architecture":
     """)
     
     st.markdown("---")
-    st.markdown("### 📊 2. EasyBazar Dataset Profile & Feature Dictionary")
+    st.markdown("### 📊 2. Data Strategy: Transfer Learning & Domain Adaptation")
     
     t_col1, t_col2 = st.columns(2)
     with t_col1:
-        st.markdown(f"""
-        * **Dataset Name:** `EasyBazar_EBM_Dataset.xlsx` (Sheet: `EBM_Churn_Data`)
-        * **Total Customer Records:** `{len(df_master):,}` rows
-        * **Total Features:** `{len(df_master.columns)}` columns
-        * **Target Variable:** `Churn` (1 = Churned, 0 = Retained)
-        * **Base Churn Rate:** `{round(df_master['Churn'].mean() * 100, 2) if 'Churn' in df_master.columns else 'N/A'}%`
-        """)
-    with t_col2:
         st.markdown("""
-        * **E-Commerce Context:** Cash-on-Delivery (COD), Electronics & Apparel SME
-        * **Key Signals:** Inactivity Recency, Complaints, Tenure, Order Count, COD Value
-        * **AI Framework:** Microsoft InterpretML (Explainable Boosting Machine)
-        """)
+        <div class='react-card' style='border-top: 3px solid #3B82F6;'>
+            <div style='font-weight: 700; color: #1E293B; margin-bottom: 8px;'><i class='fa-solid fa-graduation-cap' style='color:#3B82F6;'></i> Phase 1: Training Data (Model Learning)</div>
+            <ul style='font-size: 0.85rem; color: #475569;'>
+                <li><b>Dataset:</b> <code>E Commerce Dataset.xlsx</code> (Kaggle Benchmark)</li>
+                <li><b>Purpose:</b> Teaches the Glassbox AI the fundamental global patterns of customer churn.</li>
+                <li><b>Algorithm Input:</b> 15+ Features + Target <code>Churn</code> (Ground Truth).</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
 
+    with t_col2:
+        st.markdown(f"""
+        <div class='react-card' style='border-top: 3px solid #10B981;'>
+            <div style='font-weight: 700; color: #1E293B; margin-bottom: 8px;'><i class='fa-solid fa-rocket' style='color:#10B981;'></i> Phase 2: Inference Data (Real-world Application)</div>
+            <ul style='font-size: 0.85rem; color: #475569;'>
+                <li><b>Dataset:</b> <code>EasyBazar_EBM_Dataset.xlsx</code> (Local SME)</li>
+                <li><b>Volume Executed:</b> <code>{len(df_master):,}</code> Unseen Records</li>
+                <li><b>Purpose:</b> Deploying trained intelligence on unseen SME data.</li>
+                <li><b>AI Output:</b> <code>Churn AI ML</code> (Predicted Future Risk)</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("#### Feature Dictionary (EasyBazar Target Data)")
     col_dict_data = [
         {"Column Name": "CustomerID", "Type": "Identifier", "Description": "Unique customer account ID (e.g. EZB-10682)"},
         {"Column Name": "CustomerName", "Type": "Demographic", "Description": "Full name of the shopper"},
@@ -777,7 +788,7 @@ elif navigation == "📖 Project Methodology & Architecture":
         {"Column Name": "CityTier", "Type": "Geographic", "Description": "Logistics tier (Tier 1, 2, or 3) representing delivery distance"},
         {"Column Name": "Engagement_Score", "Type": "Engineered RFM", "Description": "Composite metric: Tenure × (OrderCount + 1)"},
         {"Column Name": "Friction_Risk", "Type": "Engineered RFM", "Description": "Composite metric: Complain × (DaySinceLastOrder + 1)"},
-        {"Column Name": "AI_Churn_Prediction", "Type": "AI Output", "Description": "Predicted label (1 = At-Risk Churner, 0 = Retained)"},
+        {"Column Name": "Churn AI ML", "Type": "AI Output", "Description": "Predicted label (1 = At-Risk Churner, 0 = Retained)"},
         {"Column Name": "Churn_Probability", "Type": "AI Output", "Description": "Estimated risk score from 0.0% to 100.0%"}
     ]
     
@@ -836,8 +847,8 @@ elif navigation == "⚙️ Data Hub & AI Retraining":
     st.markdown("""
     <div class="saas-header">
         <div>
-            <div class="saas-title"><i class="fa-solid fa-cloud-arrow-up" style="color:#10B981;"></i> Data Hub & AI Retraining</div>
-            <div class="saas-subtitle">Upload new monthly data, merge with the existing dataset, and retrain the AI engine seamlessly.</div>
+            <div class="saas-title"><i class="fa-solid fa-cloud-arrow-up" style="color:#10B981;"></i> Data Hub & AI Inference Engine</div>
+            <div class="saas-subtitle">Upload new monthly data, merge with the existing dataset, and generate new predictions seamlessly.</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -852,8 +863,8 @@ elif navigation == "⚙️ Data Hub & AI Retraining":
         uploaded_file = st.file_uploader("Drag and drop your file here", type=['csv', 'xlsx'], label_visibility="collapsed")
         
         if uploaded_file is not None:
-            if st.button("🚀 Merge Data & Start AI Retraining", type="primary", use_container_width=True):
-                with st.status("Initializing Data Merge & AI Retraining...", expanded=True) as status:
+            if st.button("🚀 Merge Data & Generate AI Predictions", type="primary", use_container_width=True):
+                with st.status("Initializing Data Merge & AI Predictions...", expanded=True) as status:
                     try:
                         # 1. Read New Data
                         st.write("📂 Reading new uploaded data...")
@@ -880,24 +891,24 @@ elif navigation == "⚙️ Data Hub & AI Retraining":
                         st.write("💾 Saving updated master database...")
                         merged_df.to_excel(master_path, index=False)
                         
-                        # 5. Trigger Preprocess and Retrain
-                        st.write("🧠 Retraining Explainable Boosting Machine (EBM)...")
+                        # 5. Trigger AI Prediction
+                        st.write("🧠 Generating new AI Churn Predictions via Kaggle Model...")
                         
-                        process = subprocess.Popen(["python", "retrain.py"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                        process = subprocess.Popen(["python", "generate_dashboard_dataset.py"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
                         for line in process.stdout:
                             if "[*]" in line or "[+]" in line or "[!]" in line:
                                 st.write(f"<i style='color:#64748B; font-size:0.8rem;'>{line.strip()}</i>", unsafe_allow_html=True)
                         process.wait()
                         
                         if process.returncode == 0:
-                            status.update(label="Model Retrained Successfully!", state="complete", expanded=False)
-                            st.success("✅ Dataset merged and AI model retrained successfully! The dashboard has been updated with the latest intelligence.")
+                            status.update(label="AI Predictions Generated Successfully!", state="complete", expanded=False)
+                            st.success("✅ Dataset merged and AI predictions updated successfully! The dashboard has been updated with the latest intelligence.")
                             st.balloons()
                             time.sleep(2)
                             st.rerun()
                         else:
-                            status.update(label="Retraining Failed", state="error", expanded=True)
-                            st.error(f"Error during AI retraining: {process.stderr.read()}")
+                            status.update(label="Prediction Failed", state="error", expanded=True)
+                            st.error(f"Error during AI Prediction: {process.stderr.read()}")
                             
                     except Exception as e:
                         status.update(label="Process Failed", state="error", expanded=True)

@@ -4,23 +4,20 @@ import os
 import numpy as np
 
 def create_dashboard_data():
-    print("[*] Loading original dataset for dashboard...")
+    print("[*] Loading EasyBazar dataset for dashboard prediction...")
     if os.path.exists('EasyBazar_EBM_Dataset.xlsx'):
         file_path = 'EasyBazar_EBM_Dataset.xlsx'
         sheet_name = 'EBM_Churn_Data'
     elif os.path.exists(os.path.join('data', 'raw', 'EasyBazar_EBM_Dataset.xlsx')):
         file_path = os.path.join('data', 'raw', 'EasyBazar_EBM_Dataset.xlsx')
         sheet_name = 'EBM_Churn_Data'
-    elif os.path.exists(os.path.join('data', 'raw', 'E Commerce Dataset.xlsx')):
-        file_path = os.path.join('data', 'raw', 'E Commerce Dataset.xlsx')
-        sheet_name = 'E Comm'
     else:
-        file_path = 'E Commerce Dataset.xlsx'
-        sheet_name = 'E Comm'
+        print("[!] EasyBazar dataset not found. Please provide 'EasyBazar_EBM_Dataset.xlsx'.")
+        return
         
     dataset = pd.read_excel(file_path, sheet_name=sheet_name)
     
-    # Load the retrained model
+    # Load the retrained model (trained on Kaggle)
     model_path = "final_model.sav"
     model = pickle.load(open(model_path, "rb"))
     
@@ -42,6 +39,7 @@ def create_dashboard_data():
         print(f"[!] Warning: Could not generate RFM signals. Error: {e}")
 
     # Drop identifier & metadata columns from features for prediction
+    # Explicitly drop the old 'Churn' column so the model predicts blindly
     drop_candidates = ['CustomerID', 'CustomerName', 'OrderDate', 'ShipmentID', 'Churn']
     drop_cols = [c for c in drop_candidates if c in dataset.columns]
     X = dataset.drop(columns=drop_cols, errors='ignore')
@@ -50,8 +48,8 @@ def create_dashboard_data():
     for col in X.select_dtypes(include=['object']).columns:
         X[col] = X[col].astype(str)
 
-    print("[*] Generating AI Predictions...")
-    dataset['AI_Churn_Prediction'] = model.predict(X)
+    print("[*] Generating AI Predictions (using Kaggle-trained patterns)...")
+    dataset['Churn AI ML'] = model.predict(X)
     if hasattr(model, 'predict_proba'):
         try:
             dataset['Churn_Probability'] = np.round(model.predict_proba(X)[:, 1] * 100, 1)
