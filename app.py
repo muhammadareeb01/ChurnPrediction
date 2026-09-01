@@ -905,6 +905,7 @@ elif navigation == "⚙️ Data Hub & AI Retraining":
                             st.success("✅ Dataset merged and AI predictions updated successfully! The dashboard has been updated with the latest intelligence.")
                             st.balloons()
                             time.sleep(2)
+                            st.cache_data.clear() # Clear memory so UI pulls the new CSV!
                             st.rerun()
                         else:
                             status.update(label="Prediction Failed", state="error", expanded=True)
