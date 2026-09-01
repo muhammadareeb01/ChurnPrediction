@@ -5,6 +5,8 @@ import os
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
+import subprocess
+import time
 
 # -----------------------------------------------------------------------------
 # 1. STREAMLIT PAGE CONFIGURATION & REACT / NEXT.JS MODERN SAAS CSS
@@ -24,6 +26,16 @@ st.markdown("""
 
     * {
         font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 
     /* Streamlit block compacting */
@@ -47,6 +59,7 @@ st.markdown("""
         justify-content: space-between;
         align-items: center;
         box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.15);
+        animation: fadeIn 0.8s ease-out, slideUp 0.6s ease-out;
     }
     .saas-title {
         font-size: 1.5rem;
@@ -77,12 +90,19 @@ st.markdown("""
         position: relative;
         overflow: hidden;
         box-shadow: 0 2px 4px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.03);
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        animation: fadeIn 0.6s ease-out, slideUp 0.5s ease-out;
+        animation-fill-mode: both;
     }
+    .metric-card:nth-child(1) { animation-delay: 0.1s; }
+    .metric-card:nth-child(2) { animation-delay: 0.2s; }
+    .metric-card:nth-child(3) { animation-delay: 0.3s; }
+    .metric-card:nth-child(4) { animation-delay: 0.4s; }
+    .metric-card:nth-child(5) { animation-delay: 0.5s; }
     .metric-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 20px -5px rgba(15, 23, 42, 0.08);
-        border-color: #CBD5E1;
+        transform: translateY(-4px) scale(1.02);
+        box-shadow: 0 12px 24px -5px rgba(15, 23, 42, 0.12);
+        border-color: #94A3B8;
     }
     .metric-card::before {
         content: "";
@@ -147,6 +167,12 @@ st.markdown("""
         padding: 1.2rem;
         margin-bottom: 1rem;
         box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+        animation: fadeIn 0.8s ease-out, slideUp 0.7s ease-out;
+        transition: all 0.3s ease;
+    }
+    .react-card:hover {
+        box-shadow: 0 8px 16px -4px rgba(15, 23, 42, 0.08);
+        transform: translateY(-2px);
     }
     .react-card-title {
         font-size: 0.95rem;
@@ -206,6 +232,7 @@ st.markdown("""
         overflow: hidden;
         background: #FFFFFF;
         box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        animation: fadeIn 0.7s ease-out;
     }
     .saas-table {
         width: 100%;
@@ -361,7 +388,8 @@ with st.sidebar:
             "📊 Executive AI Dashboard",
             "🎯 Retargeting Action Center",
             "📖 Project Methodology & Architecture",
-            "📁 Complete Dataset Explorer"
+            "📁 Complete Dataset Explorer",
+            "⚙️ Data Hub & AI Retraining"
         ],
         index=0,
         label_visibility="collapsed"
@@ -802,6 +830,105 @@ elif navigation == "📁 Complete Dataset Explorer":
     st.dataframe(df_filtered.describe().round(2), use_container_width=True)
 
 # -----------------------------------------------------------------------------
-# 8. COMPACT SAAS FOOTER
+# 8. PAGE 5: DATA HUB & AI RETRAINING
+# -----------------------------------------------------------------------------
+elif navigation == "⚙️ Data Hub & AI Retraining":
+    st.markdown("""
+    <div class="saas-header">
+        <div>
+            <div class="saas-title"><i class="fa-solid fa-cloud-arrow-up" style="color:#10B981;"></i> Data Hub & AI Retraining</div>
+            <div class="saas-subtitle">Upload new monthly data, merge with the existing dataset, and retrain the AI engine seamlessly.</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    col_up, col_info = st.columns([1, 1])
+    
+    with col_up:
+        st.markdown("<div class='react-card'>", unsafe_allow_html=True)
+        st.markdown("<div class='react-card-title'><i class='fa-solid fa-file-excel' style='color:#10B981;'></i> Upload New Dataset</div>", unsafe_allow_html=True)
+        st.markdown("<span style='font-size: 0.8rem; color: #64748B;'>Upload the latest `.xlsx` or `.csv` dataset. The system will automatically merge it with the master record and handle duplicates based on CustomerID.</span>", unsafe_allow_html=True)
+        
+        uploaded_file = st.file_uploader("Drag and drop your file here", type=['csv', 'xlsx'], label_visibility="collapsed")
+        
+        if uploaded_file is not None:
+            if st.button("🚀 Merge Data & Start AI Retraining", type="primary", use_container_width=True):
+                with st.status("Initializing Data Merge & AI Retraining...", expanded=True) as status:
+                    try:
+                        # 1. Read New Data
+                        st.write("📂 Reading new uploaded data...")
+                        if uploaded_file.name.endswith('.csv'):
+                            df_new = pd.read_csv(uploaded_file)
+                        else:
+                            df_new = pd.read_excel(uploaded_file)
+                            
+                        # 2. Load Existing Data
+                        st.write("💾 Loading master database...")
+                        master_path = "EasyBazar_EBM_Dataset.xlsx"
+                        if os.path.exists(master_path):
+                            df_existing = pd.read_excel(master_path)
+                        else:
+                            df_existing = pd.DataFrame()
+                            
+                        # 3. Merge and drop duplicates
+                        st.write("🔗 Merging and resolving duplicates (keeping latest)...")
+                        merged_df = pd.concat([df_existing, df_new], ignore_index=True)
+                        if 'CustomerID' in merged_df.columns:
+                            merged_df = merged_df.drop_duplicates(subset=['CustomerID'], keep='last')
+                            
+                        # 4. Save Master File
+                        st.write("💾 Saving updated master database...")
+                        merged_df.to_excel(master_path, index=False)
+                        
+                        # 5. Trigger Preprocess and Retrain
+                        st.write("🧠 Retraining Explainable Boosting Machine (EBM)...")
+                        
+                        process = subprocess.Popen(["python", "retrain.py"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                        for line in process.stdout:
+                            if "[*]" in line or "[+]" in line or "[!]" in line:
+                                st.write(f"<i style='color:#64748B; font-size:0.8rem;'>{line.strip()}</i>", unsafe_allow_html=True)
+                        process.wait()
+                        
+                        if process.returncode == 0:
+                            status.update(label="Model Retrained Successfully!", state="complete", expanded=False)
+                            st.success("✅ Dataset merged and AI model retrained successfully! The dashboard has been updated with the latest intelligence.")
+                            st.balloons()
+                            time.sleep(2)
+                            st.rerun()
+                        else:
+                            status.update(label="Retraining Failed", state="error", expanded=True)
+                            st.error(f"Error during AI retraining: {process.stderr.read()}")
+                            
+                    except Exception as e:
+                        status.update(label="Process Failed", state="error", expanded=True)
+                        st.error(f"An error occurred: {str(e)}")
+                        
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+    with col_info:
+        st.markdown("<div class='react-card'>", unsafe_allow_html=True)
+        st.markdown("<div class='react-card-title'><i class='fa-solid fa-circle-info' style='color:#3B82F6;'></i> How Incremental Learning Works</div>", unsafe_allow_html=True)
+        st.markdown("""
+        <ul style="font-size: 0.82rem; color: #475569; line-height: 1.6; padding-left: 1.2rem;">
+            <li><b>1. Upload:</b> Drop your new month's transaction data (CSV or Excel).</li>
+            <li><b>2. Smart Merge:</b> The system seamlessly combines it with your existing <code>EasyBazar_EBM_Dataset.xlsx</code>.</li>
+            <li><b>3. Duplicate Handling:</b> If a customer made a new purchase, their old record is replaced with the latest one to keep RFM scores accurate (based on CustomerID).</li>
+            <li><b>4. Auto-Imputation:</b> The PyTorch Autoencoder detects and fixes any missing values in the new data.</li>
+            <li><b>5. Model Update:</b> The Glassbox EBM model relearns customer behavior patterns and dynamically updates all dashboard metrics.</li>
+        </ul>
+        """, unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+        # Show Current Master Data Info
+        if not df_master.empty:
+            st.markdown("<div class='react-card'>", unsafe_allow_html=True)
+            st.markdown("<div class='react-card-title'><i class='fa-solid fa-server' style='color:#8B5CF6;'></i> Master Database Status</div>", unsafe_allow_html=True)
+            st.markdown(f"**Total Customers Evaluated:** `{len(df_master):,}`")
+            st.markdown(f"**Total Features Tracking:** `{len(df_master.columns)}`")
+            st.markdown(f"**Active Inference Engine:** Explainable Boosting Classifier")
+            st.markdown("</div>", unsafe_allow_html=True)
+
+# -----------------------------------------------------------------------------
+# 9. COMPACT SAAS FOOTER
 # -----------------------------------------------------------------------------
 st.markdown("<div style='margin-top: 2rem; border-top: 1px solid #E2E8F0; padding: 1rem 0; text-align: center; color: #64748B; font-size: 0.78rem;'><b>EasyBazar AI Decision Support Framework</b> • Master of Engineering in Information Technology Thesis • MUET Jamshoro</div>", unsafe_allow_html=True)
