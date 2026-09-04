@@ -7,6 +7,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import subprocess
 import time
+import sys
 
 # -----------------------------------------------------------------------------
 # 1. STREAMLIT PAGE CONFIGURATION & REACT / NEXT.JS MODERN SAAS CSS
@@ -906,7 +907,7 @@ elif navigation == "⚙️ Data Hub & AI Retraining":
                         # 5. Trigger AI Prediction
                         st.write("🧠 Generating new AI Churn Predictions via Kaggle Model...")
                         
-                        process = subprocess.Popen(["python", "generate_dashboard_dataset.py"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                        process = subprocess.Popen([sys.executable, "generate_dashboard_dataset.py"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
                         for line in process.stdout:
                             if "[*]" in line or "[+]" in line or "[!]" in line:
                                 st.write(f"<i style='color:#64748B; font-size:0.8rem;'>{line.strip()}</i>", unsafe_allow_html=True)
