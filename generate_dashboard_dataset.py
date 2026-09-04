@@ -15,7 +15,11 @@ def create_dashboard_data():
         print("[!] EasyBazar dataset not found. Please provide 'EasyBazar_EBM_Dataset.xlsx'.")
         return
         
-    dataset = pd.read_excel(file_path, sheet_name=sheet_name)
+    try:
+        dataset = pd.read_excel(file_path, sheet_name=sheet_name)
+    except Exception:
+        print(f"[*] Sheet '{sheet_name}' not found, reading default/first sheet...")
+        dataset = pd.read_excel(file_path)
     
     # Load the retrained model (trained on Kaggle)
     model_path = "final_model.sav"
@@ -38,15 +42,27 @@ def create_dashboard_data():
     except Exception as e:
         print(f"[!] Warning: Could not generate RFM signals. Error: {e}")
 
-    # Drop identifier & metadata columns from features for prediction
-    # Explicitly drop the old 'Churn' column so the model predicts blindly
-    drop_candidates = ['CustomerID', 'CustomerName', 'OrderDate', 'ShipmentID', 'Churn']
-    drop_cols = [c for c in drop_candidates if c in dataset.columns]
-    X = dataset.drop(columns=drop_cols, errors='ignore')
-
-    # Ensure categorical columns in X are string format matching training
-    for col in X.select_dtypes(include=['object']).columns:
-        X[col] = X[col].astype(str)
+    # Align features specifically for model prediction
+    model_features = getattr(model, 'feature_names', None) or getattr(model, 'feature_names_in_', None)
+    if model_features:
+        for mf in model_features:
+            if mf not in dataset.columns:
+                if mf == 'ProductName':
+                    dataset[mf] = 'Unknown'
+                else:
+                    dataset[mf] = 0
+            else:
+                if mf != 'ProductName':
+                    dataset[mf] = pd.to_numeric(dataset[mf], errors='coerce').fillna(0)
+                else:
+                    dataset[mf] = dataset[mf].astype(str)
+        X = dataset[model_features].copy()
+    else:
+        drop_candidates = ['CustomerID', 'CustomerName', 'OrderDate', 'ShipmentID', 'Churn']
+        drop_cols = [c for c in drop_candidates if c in dataset.columns]
+        X = dataset.drop(columns=drop_cols, errors='ignore')
+        for col in X.select_dtypes(include=['object']).columns:
+            X[col] = X[col].astype(str)
 
     print("[*] Generating AI Predictions (using Kaggle-trained patterns)...")
     dataset['Churn AI ML'] = model.predict(X)

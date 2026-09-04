@@ -357,7 +357,10 @@ def load_app_data():
     if os.path.exists("Final_Dashboard_Data.csv"):
         return pd.read_csv("Final_Dashboard_Data.csv")
     elif os.path.exists("EasyBazar_EBM_Dataset.xlsx"):
-        return pd.read_excel("EasyBazar_EBM_Dataset.xlsx", sheet_name="EBM_Churn_Data")
+        try:
+            return pd.read_excel("EasyBazar_EBM_Dataset.xlsx", sheet_name="EBM_Churn_Data")
+        except Exception:
+            return pd.read_excel("EasyBazar_EBM_Dataset.xlsx")
     return pd.DataFrame()
 
 model = load_app_model()
@@ -890,7 +893,10 @@ elif navigation == "⚙️ Data Hub & AI Retraining":
                             # 2. Load Existing Data
                             st.write("💾 Loading master database...")
                             if os.path.exists(master_path):
-                                df_existing = pd.read_excel(master_path)
+                                try:
+                                    df_existing = pd.read_excel(master_path, sheet_name="EBM_Churn_Data")
+                                except Exception:
+                                    df_existing = pd.read_excel(master_path)
                             else:
                                 df_existing = pd.DataFrame()
                                 
@@ -902,7 +908,7 @@ elif navigation == "⚙️ Data Hub & AI Retraining":
                                 
                         # 4. Save Master File
                         st.write("💾 Saving updated master database...")
-                        final_df.to_excel(master_path, index=False)
+                        final_df.to_excel(master_path, index=False, sheet_name="EBM_Churn_Data")
                         
                         # 5. Trigger AI Prediction
                         st.write("🧠 Generating new AI Churn Predictions via Kaggle Model...")
