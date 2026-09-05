@@ -365,49 +365,11 @@ def process_uploaded_file(uploaded_file, _model):
             df = pd.read_csv(uploaded_file)
         else:
             df = pd.read_excel(uploaded_file)
-            
-        # Median imputation for continuous
-        candidate_continuous = ['Tenure', 'WarehouseToHome', 'HourSpendOnApp', 'OrderAmountHikeFromlastYear', 'CouponUsed', 'OrderCount', 'DaySinceLastOrder', 'COD_Amount']
-        for col in candidate_continuous:
-            if col in df.columns and df[col].isnull().sum() > 0:
-                df[col] = df[col].fillna(df[col].median(numeric_only=True))
-                
-        # Clean string formatting
-        cat_cols = df.select_dtypes(include=['object']).columns
-        for col in cat_cols:
-            df[col] = df[col].astype(str).str.strip()
-            
-        # Engineer RFM features
-        try:
-            from src.preprocess import engineer_rfm_features
-            df = engineer_rfm_features(df)
-        except Exception:
-            pass
-            
-        # Generate predictions
-        if _model is not None:
-            model_features = getattr(_model, 'feature_names_in_', None) or getattr(_model, 'feature_names', None)
-            if model_features is not None:
-                X = df.copy()
-                for mf in model_features:
-                    if mf not in X.columns:
-                        X[mf] = 'Unknown' if mf == 'ProductName' else 0
-                    else:
-                        if mf != 'ProductName':
-                            X[mf] = pd.to_numeric(X[mf], errors='coerce').fillna(0)
-                        else:
-                            X[mf] = X[mf].astype(str)
-                X = X[model_features]
-                for col in X.select_dtypes(include=['object']).columns:
-                    X[col] = X[col].astype(str)
-                
-                df['Churn AI ML'] = _model.predict(X)
-                if hasattr(_model, 'predict_proba'):
-                    try:
-                        df['Churn_Probability'] = np.round(_model.predict_proba(X)[:, 1] * 100, 1)
-                    except Exception:
-                        pass
-        return df
+        if _model is None:
+            st.sidebar.error("Trained Kaggle model not found. Run retrain.py first.")
+            return df
+        from src.inference import score_uploaded_dataset
+        return score_uploaded_dataset(df, _model)
     except Exception as e:
         st.sidebar.error(f"Error processing file: {e}")
         return pd.DataFrame()
@@ -514,7 +476,8 @@ if sel_cities and 'CityTier' in df_filtered.columns:
 if sel_prods and 'ProductName' in df_filtered.columns:
     df_filtered = df_filtered[df_filtered['ProductName'].isin(sel_prods)]
 
-pred_col = 'Churn AI ML' if 'Churn AI ML' in df_filtered.columns else ('Churn' if 'Churn' in df_filtered.columns else None)
+pred_col = 'Churn' if 'Churn' in df_filtered.columns else None
+prob_col = 'Churn_Prediction_Percentage' if 'Churn_Prediction_Percentage' in df_filtered.columns else None
 
 if risk_filter == "🚨 At-Risk Churners Only" and pred_col:
     df_filtered = df_filtered[df_filtered[pred_col] == 1]
@@ -529,7 +492,7 @@ if navigation == "📊 Executive AI Dashboard":
     <div class="saas-header">
         <div>
             <div class="saas-title"><i class="fa-solid fa-chart-line" style="color:#38BDF8;"></i> Executive AI & BI Analytics</div>
-            <div class="saas-subtitle">Real-time Glassbox Machine Learning predictions detecting customer departure and revenue risk.</div>
+            <div class="saas-subtitle">Model predictions from the Kaggle-trained glassbox EBM — not historical churn outcomes.</div>
         </div>
         <div style="text-align: right;">
             <span class="badge badge-primary"><i class="fa-solid fa-shield-halved"></i> Active Glassbox</span>
@@ -540,61 +503,90 @@ if navigation == "📊 Executive AI Dashboard":
     total_eval = len(df_filtered)
     if pred_col:
         total_churn = int((df_filtered[pred_col] == 1).sum())
+        total_safe = total_eval - total_churn
         churn_rate = round((total_churn / total_eval * 100), 2) if total_eval > 0 else 0
         retention_rate = round(100 - churn_rate, 2)
     else:
         total_churn = 0
+        total_safe = total_eval
         churn_rate = 0.0
         retention_rate = 100.0
 
+    avg_prob = round(float(df_filtered[prob_col].mean()), 1) if (prob_col and total_eval) else 0.0
+    high_risk = int((df_filtered[prob_col] >= 70).sum()) if (prob_col and total_eval) else 0
     at_risk_cod = df_filtered[df_filtered[pred_col] == 1]['COD_Amount'].sum() if ('COD_Amount' in df_filtered.columns and pred_col) else 0
-    complain_count = int(df_filtered['Complain'].sum()) if 'Complain' in df_filtered.columns else 0
+
+    if total_eval == 0:
+        st.info("Upload a customer dataset in the sidebar. The Kaggle-trained model will add `Churn` and `Churn_Prediction_Percentage` to every row.")
+    else:
+        st.markdown("""
+        <div class="chart-insight" style="margin-bottom:1rem;">
+            <i class="fa-solid fa-lightbulb" style="color:#3B82F6;"></i>
+            <b>Prediction mode:</b> Uploaded file mein ground-truth Churn nahi hota. Yeh numbers Kaggle-trained EBM ke forecasts hain
+            (<code>Churn</code> = 0/1 at 50% threshold, <code>Churn_Prediction_Percentage</code> = leave probability).
+        </div>
+        """, unsafe_allow_html=True)
 
     # 3D SaaS Metric Cards
     st.markdown(f"""
     <div class="metric-grid">
         <div class="metric-card metric-blue">
             <div class="metric-header">
-                <span class="metric-label">Evaluated Users</span>
+                <span class="metric-label">Total Customers</span>
                 <div class="metric-icon icon-blue"><i class="fa-solid fa-users"></i></div>
             </div>
             <div class="metric-num">{total_eval:,}</div>
-            <div class="metric-detail">Active customer base</div>
+            <div class="metric-detail">Rows scored by the model</div>
         </div>
         <div class="metric-card metric-rose">
             <div class="metric-header">
-                <span class="metric-label">At-Risk Churners</span>
+                <span class="metric-label">Predicted Churners</span>
                 <div class="metric-icon icon-rose"><i class="fa-solid fa-user-xmark"></i></div>
             </div>
             <div class="metric-num">{total_churn:,}</div>
-            <div class="metric-detail">{churn_rate}% Predicted Churn Rate</div>
+            <div class="metric-detail">{churn_rate}% predicted churn rate</div>
         </div>
         <div class="metric-card metric-emerald">
             <div class="metric-header">
-                <span class="metric-label">Retention Outlook</span>
+                <span class="metric-label">Predicted Non-Churners</span>
                 <div class="metric-icon icon-emerald"><i class="fa-solid fa-user-check"></i></div>
             </div>
-            <div class="metric-num">{retention_rate}%</div>
-            <div class="metric-detail">Safe customer ratio</div>
+            <div class="metric-num">{total_safe:,}</div>
+            <div class="metric-detail">{retention_rate}% predicted safe</div>
         </div>
         <div class="metric-card metric-amber">
             <div class="metric-header">
-                <span class="metric-label">At-Risk COD Volume</span>
-                <div class="metric-icon icon-amber"><i class="fa-solid fa-money-bill-wave"></i></div>
+                <span class="metric-label">Avg Churn Probability</span>
+                <div class="metric-icon icon-amber"><i class="fa-solid fa-percent"></i></div>
             </div>
-            <div class="metric-num">PKR {at_risk_cod:,.0f}</div>
-            <div class="metric-detail">Total financial exposure</div>
+            <div class="metric-num">{avg_prob}%</div>
+            <div class="metric-detail">Mean Churn_Prediction_Percentage</div>
         </div>
         <div class="metric-card metric-indigo">
             <div class="metric-header">
-                <span class="metric-label">Complaints Filed</span>
+                <span class="metric-label">High-Risk Customers</span>
                 <div class="metric-icon icon-indigo"><i class="fa-solid fa-triangle-exclamation"></i></div>
             </div>
-            <div class="metric-num">{complain_count:,}</div>
-            <div class="metric-detail">Direct dissatisfaction signal</div>
+            <div class="metric-num">{high_risk:,}</div>
+            <div class="metric-detail">Probability ≥ 70% (predicted)</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
+
+    if prob_col and total_eval > 0:
+        fig_risk = go.Figure(data=[go.Histogram(x=df_filtered[prob_col], nbinsx=20, marker_color='#6366F1')])
+        fig_risk.update_layout(
+            title="<b>Churn Risk Distribution (Predicted %)</b>",
+            xaxis_title="Churn_Prediction_Percentage",
+            yaxis_title="Customers",
+            height=280,
+            margin=dict(l=10, r=10, t=45, b=10),
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)'
+        )
+        st.plotly_chart(fig_risk, use_container_width=True)
+        st.markdown("<div class='chart-insight'><i class='fa-solid fa-lightbulb' style='color:#3B82F6;'></i> Right side = higher predicted leave-risk. This is the model probability, not an actual churn label from your file.</div>", unsafe_allow_html=True)
+
     
     col_c1, col_c2 = st.columns(2)
     
@@ -678,7 +670,7 @@ elif navigation == "🎯 Retargeting Action Center":
     preferred_cols = [
         'CustomerID', 'CustomerName', 'ProductName', 'COD_Amount', 
         'Tenure', 'DaySinceLastOrder', 'OrderCount', 'Complain', 
-        'RFM_Recency', 'Engagement_Score', 'Churn AI ML', 'Churn_Probability'
+        'RFM_Recency', 'Engagement_Score', 'Churn', 'Churn_Prediction_Percentage'
     ]
     show_cols = [c for c in preferred_cols if c in df_filtered.columns]
     
@@ -688,11 +680,11 @@ elif navigation == "🎯 Retargeting Action Center":
         with head_col:
             st.markdown("<div style='font-size:1rem; font-weight:700; color:#1E293B; margin-top:4px;'><i class='fa-solid fa-table-list' style='color:#2563EB; margin-right:6px;'></i> Customer Risk Registry</div>", unsafe_allow_html=True)
         with btn_col:
-            csv_data = df_filtered[show_cols].to_csv(index=False).encode('utf-8')
+            csv_data = df_filtered.to_csv(index=False).encode('utf-8')
             st.download_button(
-                label="📥 Export to CSV",
+                label="📥 Export Predictions (CSV)",
                 data=csv_data,
-                file_name="Retargeting_List.csv",
+                file_name="Predicted_Churn_Dataset.csv",
                 mime="text/csv",
                 use_container_width=True
             )
@@ -708,8 +700,8 @@ elif navigation == "🎯 Retargeting Action Center":
             mask = display_df.astype(str).apply(lambda x: x.str.contains(search_query, case=False)).any(axis=1)
             display_df = display_df[mask]
             
-        if sort_by == "Highest Churn Probability" and 'Churn_Probability' in display_df.columns:
-            display_df = display_df.sort_values(by='Churn_Probability', ascending=False)
+        if sort_by == "Highest Churn Probability" and prob_col and prob_col in display_df.columns:
+            display_df = display_df.sort_values(by=prob_col, ascending=False)
         elif sort_by == "Highest COD Amount" and 'COD_Amount' in display_df.columns:
             display_df = display_df.sort_values(by='COD_Amount', ascending=False)
         elif sort_by == "Most Inactive Days" and 'DaySinceLastOrder' in display_df.columns:
@@ -722,9 +714,9 @@ elif navigation == "🎯 Retargeting Action Center":
         table_html += "<th>Status</th><th>Churn Prob</th></tr></thead><tbody>"
         
         for _, r in display_df.head(25).iterrows():
-            is_risk = r.get('Churn AI ML', 0) == 1
+            is_risk = int(r.get('Churn', 0) or 0) == 1
             status_badge = '<span class="badge badge-churn"><span class="pulse-dot pulse-red"></span> At Risk</span>' if is_risk else '<span class="badge badge-safe"><span class="pulse-dot pulse-green"></span> Safe</span>'
-            prob_val = f"{r.get('Churn_Probability', 0)}%" if 'Churn_Probability' in r else ("High" if is_risk else "Low")
+            prob_val = f"{r.get('Churn_Prediction_Percentage', 0)}%"
             
             table_html += f"<tr>"
             table_html += f"<td><b>{r.get('CustomerID', 'N/A')}</b></td>"
@@ -746,7 +738,7 @@ elif navigation == "🎯 Retargeting Action Center":
         if len(df_filtered) > 0:
             if 'CustomerName' in df_filtered.columns:
                 cust_options = df_filtered.apply(
-                    lambda r: f"{r['CustomerID']} | {r['CustomerName']} ({r.get('ProductName', 'N/A')}) - Risk: {r.get('Churn_Probability', 0)}%", 
+                    lambda r: f"{r['CustomerID']} | {r['CustomerName']} ({r.get('ProductName', 'N/A')}) - Risk: {r.get('Churn_Prediction_Percentage', 0)}%", 
                     axis=1
                 ).tolist()
             else:
@@ -763,7 +755,7 @@ elif navigation == "🎯 Retargeting Action Center":
                 st.markdown("<div class='react-card'>", unsafe_allow_html=True)
                 st.markdown("<div class='react-card-title'><i class='fa-solid fa-id-card' style='color:#2563EB;'></i> Customer Snapshot</div>", unsafe_allow_html=True)
                 
-                is_churner = cust_data.get('Churn AI ML', 0) == 1
+                is_churner = cust_data.get('Churn', 0) == 1
                 badge_html = '<span class="badge badge-churn"><span class="pulse-dot pulse-red"></span> AT RISK (CHURNING)</span>' if is_churner else '<span class="badge badge-safe"><span class="pulse-dot pulse-green"></span> SAFE (RETAINED)</span>'
                 
                 st.markdown(f"**Status:** {badge_html}", unsafe_allow_html=True)
@@ -775,8 +767,8 @@ elif navigation == "🎯 Retargeting Action Center":
                 st.markdown(f"**Inactivity:** {cust_data.get('DaySinceLastOrder', 0)} days since last order")
                 st.markdown(f"**Total Orders:** {cust_data.get('OrderCount', 0)}")
                 st.markdown(f"**Complaint History:** {'🚨 Registered Complaint' if cust_data.get('Complain', 0) == 1 else '✅ Clean History'}")
-                if 'Churn_Probability' in cust_data:
-                    st.progress(float(cust_data['Churn_Probability']) / 100, text=f"AI Churn Probability: {cust_data['Churn_Probability']}%")
+                if 'Churn_Prediction_Percentage' in cust_data.index:
+                    st.progress(float(cust_data['Churn_Prediction_Percentage']) / 100, text=f"Predicted churn probability: {cust_data['Churn_Prediction_Percentage']}%")
                 st.markdown("</div>", unsafe_allow_html=True)
 
             with c_right:
@@ -821,74 +813,271 @@ elif navigation == "🎯 Retargeting Action Center":
 # -----------------------------------------------------------------------------
 elif navigation == "🤖 AI Model Performance":
     st.markdown("""
+    <div style="margin-bottom: 1rem; padding: 1rem; background: #1E293B; border-radius: 12px; border: 1px solid #334155;">
+        <div style="color: #F8FAFC; font-weight: 700; margin-bottom: 0.5rem;"><i class="fa-solid fa-filter" style="color: #38BDF8;"></i> Select Dataset to Evaluate</div>
+    """, unsafe_allow_html=True)
+    
+    eval_source = st.radio("Select Dataset to Evaluate:", ["Kaggle Held-out Test Set", "Uploaded Dataset"], horizontal=True, label_visibility="collapsed")
+    st.markdown("</div>", unsafe_allow_html=True)
+    
+    badge_label = "Kaggle Test Set" if eval_source == "Kaggle Held-out Test Set" else "Uploaded Dataset"
+    st.markdown(f"""
     <div class="saas-header">
         <div>
             <div class="saas-title"><i class="fa-solid fa-brain" style="color:#A78BFA;"></i> AI Model Performance & Evaluation</div>
-            <div class="saas-subtitle">Live evaluation metrics computed on held-out test set (400 records) using the trained Explainable Boosting Machine (EBM).</div>
+            <div class="saas-subtitle">Live evaluation metrics computed on the selected dataset using the trained Explainable Boosting Machine (EBM).</div>
         </div>
         <div style="text-align:right;">
-            <span class="badge" style="background:#EDE9FE;color:#6D28D9;border:1px solid #C4B5FD;"><i class="fa-solid fa-flask"></i> Kaggle Test Set</span>
+            <span class="badge" style="background:#EDE9FE;color:#6D28D9;border:1px solid #C4B5FD;"><i class="fa-solid fa-flask"></i> {badge_label}</span>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    @st.cache_data
-    def compute_model_metrics():
-        """Compute classification metrics from saved model + test split."""
-        test_X_path = os.path.join('data', 'processed', 'X_test.csv')
-        test_y_path = os.path.join('data', 'processed', 'y_test.csv')
-        if not (os.path.exists(test_X_path) and os.path.exists(test_y_path) and os.path.exists("final_model.sav")):
-            return None
+    def _align_model_frame(df_in, feat_names):
+        X_test_df = df_in.drop(columns=['Churn', 'Churn AI ML', 'Churn_Probability', 'Churn_IsPredicted'], errors='ignore').copy()
+        if feat_names is not None:
+            for f in feat_names:
+                if f not in X_test_df.columns:
+                    X_test_df[f] = 0
+                else:
+                    X_test_df[f] = pd.to_numeric(X_test_df[f], errors='coerce').fillna(0)
+            X_test_df = X_test_df[list(feat_names)]
+        return X_test_df
+
+    def _ebm_importance(clf, feat_names):
+        names = list(getattr(clf, 'term_names_', None) or feat_names or [])
+        if hasattr(clf, 'term_importances') and names:
+            return sorted(zip(names, clf.term_importances()), key=lambda x: x[1], reverse=True)[:15]
+        if hasattr(clf, 'feature_importances_') and feat_names is not None:
+            return sorted(zip(feat_names, clf.feature_importances_), key=lambda x: x[1], reverse=True)[:15]
+        return None
+
+    def _labeled_metrics(y_true, y_pred, y_prob, feat_imp, n_features):
+        acc   = round(accuracy_score(y_true, y_pred) * 100, 2)
+        prec  = round(precision_score(y_true, y_pred, zero_division=0) * 100, 2)
+        rec   = round(recall_score(y_true, y_pred, zero_division=0) * 100, 2)
+        f1    = round(f1_score(y_true, y_pred, zero_division=0) * 100, 2)
+        auc   = round(roc_auc_score(y_true, y_prob) * 100, 2) if y_prob is not None else None
+        cm    = confusion_matrix(y_true, y_pred).tolist()
+        roc_data = None
+        if y_prob is not None:
+            from sklearn.metrics import roc_curve
+            fpr, tpr, _ = roc_curve(y_true, y_prob)
+            roc_data = {"fpr": fpr.tolist(), "tpr": tpr.tolist()}
+        return {
+            "mode": "labeled",
+            "accuracy": acc, "precision": prec, "recall": rec,
+            "f1": f1, "auc": auc, "confusion_matrix": cm,
+            "feature_importance": feat_imp, "roc_data": roc_data,
+            "n_test": len(y_true), "n_features": n_features
+        }
+
+    def compute_model_metrics(source, df_eval=None):
+        """Kaggle: real accuracy vs labels. Upload: apply EBM and show predicted Churn."""
         try:
-            X_test_df = pd.read_csv(test_X_path)
-            y_test_df = pd.read_csv(test_y_path)
-            y_test_vals = y_test_df['Churn'] if 'Churn' in y_test_df.columns else y_test_df.iloc[:, 0]
+            if not os.path.exists("final_model.sav"):
+                return None
             clf = pickle.load(open("final_model.sav", "rb"))
-            # Align features
             feat_names = getattr(clf, 'feature_names_in_', None) or getattr(clf, 'feature_names', None)
-            if feat_names is not None:
-                for f in feat_names:
-                    if f not in X_test_df.columns:
-                        X_test_df[f] = 0
-                X_test_df = X_test_df[feat_names]
-            for col in X_test_df.select_dtypes(include=['object']).columns:
-                X_test_df[col] = X_test_df[col].astype(str)
-            y_pred = clf.predict(X_test_df)
-            y_prob = clf.predict_proba(X_test_df)[:, 1] if hasattr(clf, 'predict_proba') else None
-            acc   = round(accuracy_score(y_test_vals, y_pred) * 100, 2)
-            prec  = round(precision_score(y_test_vals, y_pred, zero_division=0) * 100, 2)
-            rec   = round(recall_score(y_test_vals, y_pred, zero_division=0) * 100, 2)
-            f1    = round(f1_score(y_test_vals, y_pred, zero_division=0) * 100, 2)
-            auc   = round(roc_auc_score(y_test_vals, y_prob) * 100, 2) if y_prob is not None else None
-            cm    = confusion_matrix(y_test_vals, y_pred).tolist()
-            # Feature importance
-            feat_imp = None
-            if hasattr(clf, 'term_importances_') and feat_names is not None:
-                imp_vals = clf.term_importances()
-                feat_imp = sorted(zip(feat_names, imp_vals), key=lambda x: x[1], reverse=True)[:15]
-            elif hasattr(clf, 'feature_importances_') and feat_names is not None:
-                feat_imp = sorted(zip(feat_names, clf.feature_importances_), key=lambda x: x[1], reverse=True)[:15]
-            # ROC curve data
-            roc_data = None
-            if y_prob is not None:
-                from sklearn.metrics import roc_curve
-                fpr, tpr, _ = roc_curve(y_test_vals, y_prob)
-                roc_data = {"fpr": fpr.tolist(), "tpr": tpr.tolist()}
+            feat_imp = _ebm_importance(clf, feat_names)
+
+            kaggle_exam = None
+            test_X_path = os.path.join('data', 'processed', 'X_test.csv')
+            test_y_path = os.path.join('data', 'processed', 'y_test.csv')
+            if os.path.exists(test_X_path) and os.path.exists(test_y_path):
+                Xk = pd.read_csv(test_X_path)
+                yk = pd.read_csv(test_y_path)
+                yk_vals = yk['Churn'] if 'Churn' in yk.columns else yk.iloc[:, 0]
+                if feat_names is not None:
+                    for f in feat_names:
+                        if f not in Xk.columns:
+                            Xk[f] = 0
+                    Xk = Xk[list(feat_names)]
+                yk_pred = clf.predict(Xk)
+                yk_prob = clf.predict_proba(Xk)[:, 1] if hasattr(clf, 'predict_proba') else None
+                kaggle_exam = _labeled_metrics(yk_vals, yk_pred, yk_prob, feat_imp, Xk.shape[1])
+
+            if source == "Kaggle Held-out Test Set":
+                return kaggle_exam
+
+            if df_eval is None or df_eval.empty:
+                return {"error": "No uploaded dataset found. Please upload a dataset from the sidebar."}
+
+            # Uploaded data is never expected to have ground-truth Churn.
+            if 'Churn' in df_eval.columns:
+                y_pred = pd.to_numeric(df_eval['Churn'], errors='coerce').fillna(0).astype(int).values
+            else:
+                X_test_df = _align_model_frame(df_eval, feat_names)
+                y_pred = clf.predict(X_test_df)
+            if 'Churn_Prediction_Percentage' in df_eval.columns:
+                y_prob = pd.to_numeric(df_eval['Churn_Prediction_Percentage'], errors='coerce').fillna(0).values / 100.0
+            else:
+                X_test_df = _align_model_frame(df_eval, feat_names)
+                y_prob = clf.predict_proba(X_test_df)[:, 1] if hasattr(clf, 'predict_proba') else None
+
+            n = len(y_pred)
+            pred_churn = int((np.array(y_pred) == 1).sum())
+            mean_risk = round(float(np.mean(y_prob) * 100), 1) if y_prob is not None else 0.0
+            high_risk = int((np.array(y_prob) * 100 >= 70).sum()) if y_prob is not None else 0
+            n_features = len(feat_names) if feat_names is not None else 4
             return {
-                "accuracy": acc, "precision": prec, "recall": rec,
-                "f1": f1, "auc": auc, "confusion_matrix": cm,
-                "feature_importance": feat_imp, "roc_data": roc_data,
-                "n_test": len(y_test_vals), "n_features": X_test_df.shape[1]
+                "mode": "inference",
+                "feature_importance": feat_imp,
+                "n_test": n,
+                "n_features": n_features,
+                "predicted_churn": pred_churn,
+                "predicted_safe": n - pred_churn,
+                "churn_rate": round((pred_churn / n * 100), 2) if n else 0,
+                "mean_risk": mean_risk,
+                "high_risk": high_risk,
+                "y_pred": np.array(y_pred).tolist(),
+                "y_prob": (np.array(y_prob) * 100).tolist() if y_prob is not None else [],
+                "kaggle_exam": kaggle_exam
             }
         except Exception as e:
             return {"error": str(e)}
 
-    metrics = compute_model_metrics()
+    metrics = compute_model_metrics(eval_source, df_filtered)
 
     if metrics is None:
         st.warning("⚠️ Test data or model not found. Make sure `data/processed/X_test.csv`, `y_test.csv`, and `final_model.sav` exist.")
     elif "error" in metrics:
         st.error(f"❌ Error computing metrics: {metrics['error']}")
+    elif metrics.get("mode") == "inference":
+        st.markdown("""
+        <div class="chart-insight" style="margin-bottom:1rem;">
+            <i class="fa-solid fa-lightbulb" style="color:#3B82F6;"></i>
+            Uploaded file se ground-truth Churn expect nahi kiya jata, isliye EasyBazar ki <b>true</b> accuracy nahi nikal sakte.
+            Neeche pehle aapki file par <b>applied predictions</b> hain, phir usi EBM ki <b>Kaggle test accuracy / precision / recall</b>
+            (yeh model ki exam score hai jo aapki file par apply ho rahi hai).
+        </div>
+        """, unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="metric-grid" style="grid-template-columns: repeat(5, 1fr);">
+            <div class="metric-card metric-blue">
+                <div class="metric-header"><span class="metric-label">Evaluated Rows</span>
+                <div class="metric-icon icon-blue"><i class="fa-solid fa-users"></i></div></div>
+                <div class="metric-num">{metrics['n_test']:,}</div>
+                <div class="metric-detail">Uploaded customers scored</div>
+            </div>
+            <div class="metric-card metric-rose">
+                <div class="metric-header"><span class="metric-label">Predicted Churn</span>
+                <div class="metric-icon icon-rose"><i class="fa-solid fa-user-xmark"></i></div></div>
+                <div class="metric-num">{metrics['predicted_churn']:,}</div>
+                <div class="metric-detail">Churn column written by EBM</div>
+            </div>
+            <div class="metric-card metric-emerald">
+                <div class="metric-header"><span class="metric-label">Predicted Safe</span>
+                <div class="metric-icon icon-emerald"><i class="fa-solid fa-user-check"></i></div></div>
+                <div class="metric-num">{metrics['predicted_safe']:,}</div>
+                <div class="metric-detail">Retained / low risk</div>
+            </div>
+            <div class="metric-card metric-amber">
+                <div class="metric-header"><span class="metric-label">Predicted Rate</span>
+                <div class="metric-icon icon-amber"><i class="fa-solid fa-percent"></i></div></div>
+                <div class="metric-num">{metrics['churn_rate']}%</div>
+                <div class="metric-detail">Share flagged at-risk</div>
+            </div>
+            <div class="metric-card metric-indigo">
+                <div class="metric-header"><span class="metric-label">Avg Risk Score</span>
+                <div class="metric-icon icon-indigo"><i class="fa-solid fa-gauge-high"></i></div></div>
+                <div class="metric-num">{metrics['mean_risk']}%</div>
+                <div class="metric-detail">Mean Churn_Prediction_Percentage</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        exam = metrics.get("kaggle_exam") or {}
+        if exam:
+            st.markdown("#### Same EBM — Kaggle test accuracy / precision / recall (applied to your upload)")
+            st.markdown(f"""
+            <div class="metric-grid" style="grid-template-columns: repeat(5, 1fr);">
+                <div class="metric-card metric-emerald">
+                    <div class="metric-header"><span class="metric-label">Accuracy</span>
+                    <div class="metric-icon icon-emerald"><i class="fa-solid fa-bullseye"></i></div></div>
+                    <div class="metric-num">{exam['accuracy']}%</div>
+                    <div class="metric-detail">Kaggle held-out exam</div>
+                </div>
+                <div class="metric-card metric-blue">
+                    <div class="metric-header"><span class="metric-label">Precision</span>
+                    <div class="metric-icon icon-blue"><i class="fa-solid fa-crosshairs"></i></div></div>
+                    <div class="metric-num">{exam['precision']}%</div>
+                    <div class="metric-detail">Of predicted churners, truly churned</div>
+                </div>
+                <div class="metric-card metric-amber">
+                    <div class="metric-header"><span class="metric-label">Recall</span>
+                    <div class="metric-icon icon-amber"><i class="fa-solid fa-magnet"></i></div></div>
+                    <div class="metric-num">{exam['recall']}%</div>
+                    <div class="metric-detail">Actual churners correctly caught</div>
+                </div>
+                <div class="metric-card metric-rose">
+                    <div class="metric-header"><span class="metric-label">F1 Score</span>
+                    <div class="metric-icon icon-rose"><i class="fa-solid fa-scale-balanced"></i></div></div>
+                    <div class="metric-num">{exam['f1']}%</div>
+                    <div class="metric-detail">Precision–Recall balance</div>
+                </div>
+                <div class="metric-card metric-indigo">
+                    <div class="metric-header"><span class="metric-label">ROC-AUC</span>
+                    <div class="metric-icon icon-indigo"><i class="fa-solid fa-chart-area"></i></div></div>
+                    <div class="metric-num">{exam.get('auc', 'N/A')}%</div>
+                    <div class="metric-detail">Ranking quality on Kaggle test</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        col_pred, col_prob = st.columns(2)
+        with col_pred:
+            fig_pred = go.Figure(data=[
+                go.Bar(
+                    x=["Predicted Safe (0)", "Predicted Churn (1)"],
+                    y=[metrics['predicted_safe'], metrics['predicted_churn']],
+                    marker_color=["#10B981", "#EF4444"]
+                )
+            ])
+            fig_pred.update_layout(
+                title="<b>Uploaded Data — Predicted Churn Column</b>",
+                height=340, margin=dict(l=10, r=10, t=50, b=10),
+                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)'
+            )
+            st.plotly_chart(fig_pred, use_container_width=True)
+            st.markdown("<div class='chart-insight'><i class='fa-solid fa-lightbulb' style='color:#3B82F6;'></i> Yeh bars Kaggle-trained EBM ki likhi hui Churn values hain, uploaded customers ke liye.</div>", unsafe_allow_html=True)
+        with col_prob:
+            if metrics.get("y_prob"):
+                fig_hist = go.Figure(data=[go.Histogram(x=metrics["y_prob"], nbinsx=20, marker_color="#6366F1")])
+                fig_hist.update_layout(
+                    title="<b>Predicted Risk Score Distribution</b>",
+                    xaxis_title="Churn Probability (%)", yaxis_title="Customers",
+                    height=340, margin=dict(l=10, r=10, t=50, b=10),
+                    paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)'
+                )
+                st.plotly_chart(fig_hist, use_container_width=True)
+                st.markdown("<div class='chart-insight'><i class='fa-solid fa-lightbulb' style='color:#3B82F6;'></i> Right side = higher leave-risk. EBM ne yeh scores Tenure, OrderCount, DaySinceLastOrder, Complain se banaye.</div>", unsafe_allow_html=True)
+
+        if metrics["feature_importance"]:
+            feat_names_list = [x[0] for x in metrics["feature_importance"]]
+            feat_vals_list  = [float(x[1]) for x in metrics["feature_importance"]]
+            fig_fi = go.Figure(go.Bar(
+                x=feat_vals_list[::-1], y=feat_names_list[::-1], orientation='h',
+                marker=dict(color=feat_vals_list[::-1], colorscale=[[0, '#EDE9FE'], [0.5, '#8B5CF6'], [1, '#4C1D95']], showscale=False)
+            ))
+            fig_fi.update_layout(
+                title="<b>Top Feature Importances (EBM Glassbox)</b>",
+                xaxis_title="Importance Score", height=420,
+                margin=dict(l=10, r=10, t=50, b=10),
+                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)'
+            )
+            st.plotly_chart(fig_fi, use_container_width=True)
+
+        st.markdown(f"""
+        <div class="react-card" style="background:linear-gradient(135deg,#0F172A,#1E293B); border:1px solid #334155; margin-top:0.5rem;">
+            <div style="display:flex; gap:2rem; flex-wrap:wrap; align-items:center;">
+                <div style="color:#94A3B8; font-size:0.8rem;"><i class="fa-solid fa-database" style="color:#38BDF8;"></i> <b style="color:#F8FAFC;">Scored Records:</b> {metrics['n_test']:,}</div>
+                <div style="color:#94A3B8; font-size:0.8rem;"><i class="fa-solid fa-layer-group" style="color:#A78BFA;"></i> <b style="color:#F8FAFC;">Features Used:</b> {metrics['n_features']}</div>
+                <div style="color:#94A3B8; font-size:0.8rem;"><i class="fa-solid fa-robot" style="color:#FBBF24;"></i> <b style="color:#F8FAFC;">Algorithm:</b> Explainable Boosting Machine (EBM)</div>
+                <div style="color:#94A3B8; font-size:0.8rem;"><i class="fa-solid fa-code-branch" style="color:#F43F5E;"></i> <b style="color:#F8FAFC;">Library:</b> InterpretML (Microsoft)</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
     else:
         # ── KPI Metric Cards ──────────────────────────────────────────────
         st.markdown(f"""
@@ -946,6 +1135,8 @@ elif navigation == "🤖 AI Model Performance":
             | **Recall** | Jo actually churn hue, unme se AI ne kitno ko pakra? (Miss rate) |
             | **F1 Score** | Precision aur Recall ka balance — agar dono high hain tou F1 bhi high hoga |
             | **ROC-AUC** | 100% = perfect model, 50% = coin toss. Humare EBM ka score dekho! |
+
+            **Why is accuracy ~88% but precision/recall lower?** Evaluation is correct. Kaggle test has ~17% actual churners and ~83% safe customers. Accuracy looks high because the model is good at the majority “safe” class (888 true negatives). Precision (69%) and recall (57%) measure the harder minority class: catching people who actually leave. Confusion matrix: TP=108, FN=82, FP=48, TN=888.
             """)
 
         st.markdown("---")
@@ -1042,8 +1233,8 @@ elif navigation == "🤖 AI Model Performance":
         <div class="react-card" style="background:linear-gradient(135deg,#0F172A,#1E293B); border:1px solid #334155; margin-top:0.5rem;">
             <div style="display:flex; gap:2rem; flex-wrap:wrap; align-items:center;">
                 <div style="color:#94A3B8; font-size:0.8rem;"><i class="fa-solid fa-database" style="color:#38BDF8;"></i> <b style="color:#F8FAFC;">Test Records:</b> {metrics['n_test']:,}</div>
-                <div style="color:#94A3B8; font-size:0.8rem;"><i class="fa-solid fa-layer-group" style="color:#A78BFA;"></i> <b style="color:#F8FAFC;">Features Used:</b> {metrics['n_features']}</div>
-                <div style="color:#94A3B8; font-size:0.8rem;"><i class="fa-solid fa-split" style="color:#34D399;"></i> <b style="color:#F8FAFC;">Split Strategy:</b> 80/20 Stratified</div>
+                <div style="color:#94A3B8; font-size:0.8rem;"><i class="fa-solid fa-layer-group" style="color:#A78BFA;"></i> <b style="color:#F8FAFC;">Inputs:</b> Tenure, OrderCount, DaySinceLastOrder, Complain</div>
+                <div style="color:#94A3B8; font-size:0.8rem;"><i class="fa-solid fa-flag" style="color:#34D399;"></i> <b style="color:#F8FAFC;">Output label:</b> Kaggle Churn (0/1)</div>
                 <div style="color:#94A3B8; font-size:0.8rem;"><i class="fa-solid fa-robot" style="color:#FBBF24;"></i> <b style="color:#F8FAFC;">Algorithm:</b> Explainable Boosting Machine (EBM)</div>
                 <div style="color:#94A3B8; font-size:0.8rem;"><i class="fa-solid fa-code-branch" style="color:#F43F5E;"></i> <b style="color:#F8FAFC;">Library:</b> InterpretML (Microsoft)</div>
             </div>
@@ -1103,7 +1294,7 @@ elif navigation == "📖 Project Methodology & Architecture":
                 <li><b>Dataset:</b> User-uploaded test dataset</li>
                 <li><b>Volume Executed:</b> {inference_info}</li>
                 <li><b>Purpose:</b> Deploying trained intelligence on unseen data.</li>
-                <li><b>AI Output:</b> <code>Churn AI ML</code> (Predicted Future Risk)</li>
+                <li><b>AI Output:</b> <code>Churn</code> (0/1) + <code>Churn_Prediction_Percentage</code></li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
@@ -1121,8 +1312,8 @@ elif navigation == "📖 Project Methodology & Architecture":
         {"Column Name": "CityTier", "Type": "Geographic", "Description": "Logistics tier (Tier 1, 2, or 3) representing delivery distance"},
         {"Column Name": "Engagement_Score", "Type": "Engineered RFM", "Description": "Composite metric: Tenure × (OrderCount + 1)"},
         {"Column Name": "Friction_Risk", "Type": "Engineered RFM", "Description": "Composite metric: Complain × (DaySinceLastOrder + 1)"},
-        {"Column Name": "Churn AI ML", "Type": "AI Output", "Description": "Predicted label (1 = At-Risk Churner, 0 = Retained)"},
-        {"Column Name": "Churn_Probability", "Type": "AI Output", "Description": "Estimated risk score from 0.0% to 100.0%"}
+        {"Column Name": "Churn", "Type": "AI Output", "Description": "Predicted label written by the model (1 = churn, 0 = stay)"},
+        {"Column Name": "Churn_Prediction_Percentage", "Type": "AI Output", "Description": "Predicted probability of churn from 0.0% to 100.0%"}
     ]
     
     # Render clean HTML dictionary table
@@ -1173,7 +1364,7 @@ elif navigation == "📁 Complete Dataset Explorer":
                 st.download_button(
                     label="📥 Download Full Dataset (CSV)",
                     data=csv_full,
-                    file_name="Full_Dataset.csv",
+                    file_name="Predicted_Churn_Dataset.csv",
                     mime="text/csv",
                     use_container_width=True
                 )
@@ -1301,7 +1492,7 @@ elif navigation == "⚙️ Data Hub & AI Retraining":
             <li><b>1. Upload:</b> Drop your new month's transaction data (CSV or Excel).</li>
             <li><b>2. Choose Action:</b> Decide whether to <b>Replace</b> the entire database (start fresh) or <b>Merge</b> with existing records.</li>
             <li><b>3. Duplicate Handling (Merge Mode):</b> If a customer made a new purchase, their old record is replaced with the latest one to keep RFM scores accurate.</li>
-            <li><b>4. AI Intelligence:</b> The system runs the uploaded data against the trained Kaggle patterns to independently generate <code>Churn AI ML</code> predictions.</li>
+            <li><b>4. AI Intelligence:</b> The Kaggle-trained EBM writes <code>Churn</code> and <code>Churn_Prediction_Percentage</code> onto the uploaded file. Original columns are kept.</li>
             <li><b>5. Dynamic Refresh:</b> All dashboard charts, KPI metrics, and Retargeting Action Center tables instantly update.</li>
         </ul>
         """, unsafe_allow_html=True)

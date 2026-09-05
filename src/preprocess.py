@@ -18,6 +18,14 @@ from sklearn.model_selection import train_test_split
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 sys.path.insert(0, os.path.abspath('.'))
 
+# EBM trains only on these behavioral columns. All other Kaggle fields are ignored.
+MODEL_FEATURE_COLUMNS = [
+    'Tenure',
+    'OrderCount',
+    'DaySinceLastOrder',
+    'Complain',
+]
+
 def engineer_rfm_features(df: pd.DataFrame) -> pd.DataFrame:
     """
     AS&RB Requirement: Engineers Direct/Indirect RFM Signals for the EBM Glassbox.
@@ -140,11 +148,18 @@ def perform_stratified_split(df: pd.DataFrame, target_col: str = 'Churn', test_s
     """
     print(f"[*] Splitting dataset into Train ({int((1-test_size)*100)}%) and Test ({int(test_size*100)}%) with Stratification on '{target_col}'...")
     
-    # Drop identifier and metadata columns for feature matrix
-    drop_candidates = [target_col, 'CustomerID', 'CustomerName', 'OrderDate', 'ShipmentID']
-    drop_cols = [c for c in drop_candidates if c in df.columns]
-    X = df.drop(columns=drop_cols)
-    y = df[target_col]
+    if target_col not in df.columns:
+        raise ValueError(f"Kaggle target column '{target_col}' is required for supervised glassbox learning.")
+
+    missing = [c for c in MODEL_FEATURE_COLUMNS if c not in df.columns]
+    if missing:
+        raise ValueError(f"Training requires columns {missing}, but they are missing from the dataset.")
+
+    # Churn is the LABEL (what to predict), never an input feature.
+    X = df[MODEL_FEATURE_COLUMNS].copy()
+    if target_col in X.columns:
+        X = X.drop(columns=[target_col])
+    y = df[target_col].astype(int)
     
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=test_size, random_state=random_state, stratify=y
@@ -202,6 +217,7 @@ def main():
         "dataset_name": "Kaggle E-Commerce Customer Churn Dataset (Full Train)",
         "initial_records": int(df_raw.shape[0]),
         "total_features": int(X_train.shape[1]),
+        "model_feature_columns": MODEL_FEATURE_COLUMNS,
         "target_variable": "Churn (1 = Churned, 0 = Retained)",
         "overall_churn_rate_pct": round(float(df_raw['Churn'].mean() * 100), 2),
         "missing_values_detected": missing_stats,
