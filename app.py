@@ -1109,8 +1109,8 @@ elif navigation == "📁 Complete Dataset Explorer":
     st.markdown("""
     <div class="saas-header">
         <div>
-            <div class="saas-title"><i class="fa-solid fa-database" style="color:#38BDF8;"></i> EasyBazar Complete Dataset Explorer</div>
-            <div class="saas-subtitle">Interactive inspection of all 2,000 records with column sorting, statistics, and 1-click export.</div>
+            <div class="saas-title"><i class="fa-solid fa-database" style="color:#38BDF8;"></i> Complete Dataset Explorer</div>
+            <div class="saas-subtitle">Interactive inspection of all records with column sorting, statistics, and 1-click export.</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -1124,7 +1124,7 @@ elif navigation == "📁 Complete Dataset Explorer":
         st.download_button(
             label="📥 Download Full Dataset (CSV)",
             data=csv_full,
-            file_name="EasyBazar_Full_Dataset.csv",
+            file_name="Full_Dataset.csv",
             mime="text/csv",
             use_container_width=True
         )
@@ -1133,7 +1133,13 @@ elif navigation == "📁 Complete Dataset Explorer":
     
     st.markdown("<div style='margin-top: 1.5rem;'></div>", unsafe_allow_html=True)
     st.markdown("#### 📊 Descriptive Numerical Statistics:")
-    st.dataframe(df_filtered.describe().round(2), use_container_width=True)
+    try:
+        if not df_filtered.empty:
+            st.dataframe(df_filtered.describe().round(2), use_container_width=True)
+        else:
+            st.info("No data available to display statistics.")
+    except ValueError:
+        st.info("No numerical data available to describe.")
 
 # -----------------------------------------------------------------------------
 # 8. PAGE 5: DATA HUB & AI RETRAINING
