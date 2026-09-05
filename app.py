@@ -8,6 +8,10 @@ import plotly.graph_objects as go
 import subprocess
 import time
 import sys
+from sklearn.metrics import (
+    accuracy_score, precision_score, recall_score,
+    f1_score, roc_auc_score, confusion_matrix, classification_report
+)
 
 # -----------------------------------------------------------------------------
 # 1. STREAMLIT PAGE CONFIGURATION & REACT / NEXT.JS MODERN SAAS CSS
@@ -391,6 +395,7 @@ with st.sidebar:
         options=[
             "📊 Executive AI Dashboard",
             "🎯 Retargeting Action Center",
+            "🤖 AI Model Performance",
             "📖 Project Methodology & Architecture",
             "📁 Complete Dataset Explorer",
             "⚙️ Data Hub & AI Retraining"
@@ -729,7 +734,241 @@ elif navigation == "🎯 Retargeting Action Center":
                 st.markdown("</div>", unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 6. PAGE 3: PROJECT METHODOLOGY & ARCHITECTURE
+# 6. PAGE 3: AI MODEL PERFORMANCE
+# -----------------------------------------------------------------------------
+elif navigation == "🤖 AI Model Performance":
+    st.markdown("""
+    <div class="saas-header">
+        <div>
+            <div class="saas-title"><i class="fa-solid fa-brain" style="color:#A78BFA;"></i> AI Model Performance & Evaluation</div>
+            <div class="saas-subtitle">Live evaluation metrics computed on held-out test set (400 records) using the trained Explainable Boosting Machine (EBM).</div>
+        </div>
+        <div style="text-align:right;">
+            <span class="badge" style="background:#EDE9FE;color:#6D28D9;border:1px solid #C4B5FD;"><i class="fa-solid fa-flask"></i> Kaggle Test Set</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    @st.cache_data
+    def compute_model_metrics():
+        """Compute classification metrics from saved model + test split."""
+        test_X_path = os.path.join('data', 'processed', 'X_test.csv')
+        test_y_path = os.path.join('data', 'processed', 'y_test.csv')
+        if not (os.path.exists(test_X_path) and os.path.exists(test_y_path) and os.path.exists("final_model.sav")):
+            return None
+        try:
+            X_test_df = pd.read_csv(test_X_path)
+            y_test_df = pd.read_csv(test_y_path)
+            y_test_vals = y_test_df['Churn'] if 'Churn' in y_test_df.columns else y_test_df.iloc[:, 0]
+            clf = pickle.load(open("final_model.sav", "rb"))
+            # Align features
+            feat_names = getattr(clf, 'feature_names_in_', None) or getattr(clf, 'feature_names', None)
+            if feat_names is not None:
+                for f in feat_names:
+                    if f not in X_test_df.columns:
+                        X_test_df[f] = 0
+                X_test_df = X_test_df[feat_names]
+            for col in X_test_df.select_dtypes(include=['object']).columns:
+                X_test_df[col] = X_test_df[col].astype(str)
+            y_pred = clf.predict(X_test_df)
+            y_prob = clf.predict_proba(X_test_df)[:, 1] if hasattr(clf, 'predict_proba') else None
+            acc   = round(accuracy_score(y_test_vals, y_pred) * 100, 2)
+            prec  = round(precision_score(y_test_vals, y_pred, zero_division=0) * 100, 2)
+            rec   = round(recall_score(y_test_vals, y_pred, zero_division=0) * 100, 2)
+            f1    = round(f1_score(y_test_vals, y_pred, zero_division=0) * 100, 2)
+            auc   = round(roc_auc_score(y_test_vals, y_prob) * 100, 2) if y_prob is not None else None
+            cm    = confusion_matrix(y_test_vals, y_pred).tolist()
+            # Feature importance
+            feat_imp = None
+            if hasattr(clf, 'term_importances_') and feat_names is not None:
+                imp_vals = clf.term_importances()
+                feat_imp = sorted(zip(feat_names, imp_vals), key=lambda x: x[1], reverse=True)[:15]
+            elif hasattr(clf, 'feature_importances_') and feat_names is not None:
+                feat_imp = sorted(zip(feat_names, clf.feature_importances_), key=lambda x: x[1], reverse=True)[:15]
+            # ROC curve data
+            roc_data = None
+            if y_prob is not None:
+                from sklearn.metrics import roc_curve
+                fpr, tpr, _ = roc_curve(y_test_vals, y_prob)
+                roc_data = {"fpr": fpr.tolist(), "tpr": tpr.tolist()}
+            return {
+                "accuracy": acc, "precision": prec, "recall": rec,
+                "f1": f1, "auc": auc, "confusion_matrix": cm,
+                "feature_importance": feat_imp, "roc_data": roc_data,
+                "n_test": len(y_test_vals), "n_features": X_test_df.shape[1]
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+    metrics = compute_model_metrics()
+
+    if metrics is None:
+        st.warning("⚠️ Test data or model not found. Make sure `data/processed/X_test.csv`, `y_test.csv`, and `final_model.sav` exist.")
+    elif "error" in metrics:
+        st.error(f"❌ Error computing metrics: {metrics['error']}")
+    else:
+        # ── KPI Metric Cards ──────────────────────────────────────────────
+        st.markdown(f"""
+        <div class="metric-grid" style="grid-template-columns: repeat(5, 1fr);">
+            <div class="metric-card metric-emerald">
+                <div class="metric-header">
+                    <span class="metric-label">Accuracy</span>
+                    <div class="metric-icon icon-emerald"><i class="fa-solid fa-bullseye"></i></div>
+                </div>
+                <div class="metric-num">{metrics['accuracy']}%</div>
+                <div class="metric-detail">Overall correct predictions</div>
+            </div>
+            <div class="metric-card metric-blue">
+                <div class="metric-header">
+                    <span class="metric-label">Precision</span>
+                    <div class="metric-icon icon-blue"><i class="fa-solid fa-crosshairs"></i></div>
+                </div>
+                <div class="metric-num">{metrics['precision']}%</div>
+                <div class="metric-detail">Of predicted churners, truly churned</div>
+            </div>
+            <div class="metric-card metric-amber">
+                <div class="metric-header">
+                    <span class="metric-label">Recall</span>
+                    <div class="metric-icon icon-amber"><i class="fa-solid fa-magnet"></i></div>
+                </div>
+                <div class="metric-num">{metrics['recall']}%</div>
+                <div class="metric-detail">Actual churners correctly caught</div>
+            </div>
+            <div class="metric-card metric-rose">
+                <div class="metric-header">
+                    <span class="metric-label">F1 Score</span>
+                    <div class="metric-icon icon-rose"><i class="fa-solid fa-scale-balanced"></i></div>
+                </div>
+                <div class="metric-num">{metrics['f1']}%</div>
+                <div class="metric-detail">Precision–Recall harmonic mean</div>
+            </div>
+            <div class="metric-card metric-indigo">
+                <div class="metric-header">
+                    <span class="metric-label">ROC-AUC</span>
+                    <div class="metric-icon icon-indigo"><i class="fa-solid fa-chart-area"></i></div>
+                </div>
+                <div class="metric-num">{metrics['auc'] if metrics['auc'] else 'N/A'}%</div>
+                <div class="metric-detail">Discrimination ability score</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # ── What each metric means ─────────────────────────────────────────
+        with st.expander("📚 What do these metrics mean? (Click to expand)", expanded=False):
+            st.markdown("""
+            | Metric | What it means in plain Urdu/English |
+            |--------|--------------------------------------|
+            | **Accuracy** | Out of 100 customers, kitne sahi predict hue (churn ya nahi)? |
+            | **Precision** | Jinhe AI ne "Churn" kaha, unme se kitne actually churn hue? (False Alarm rate) |
+            | **Recall** | Jo actually churn hue, unme se AI ne kitno ko pakra? (Miss rate) |
+            | **F1 Score** | Precision aur Recall ka balance — agar dono high hain tou F1 bhi high hoga |
+            | **ROC-AUC** | 100% = perfect model, 50% = coin toss. Humare EBM ka score dekho! |
+            """)
+
+        st.markdown("---")
+        col_cm, col_roc = st.columns(2)
+
+        # ── Confusion Matrix ───────────────────────────────────────────────
+        with col_cm:
+            cm = metrics["confusion_matrix"]
+            tn, fp, fn, tp = cm[0][0], cm[0][1], cm[1][0], cm[1][1]
+            cm_labels = ["Retained (0)", "Churned (1)"]
+            fig_cm = go.Figure(data=go.Heatmap(
+                z=[[tn, fp], [fn, tp]],
+                x=["Predicted: Safe", "Predicted: Churn"],
+                y=["Actual: Safe", "Actual: Churn"],
+                text=[[f"TN\n{tn}", f"FP\n{fp}"], [f"FN\n{fn}", f"TP\n{tp}"]],
+                texttemplate="<b>%{text}</b>",
+                colorscale=[
+                    [0.0, "#F0FDF4"], [0.3, "#86EFAC"],
+                    [0.6, "#22C55E"], [1.0, "#15803D"]
+                ],
+                showscale=False
+            ))
+            fig_cm.update_layout(
+                title="<b>Confusion Matrix (Test Set)</b>",
+                height=340,
+                margin=dict(l=10, r=10, t=50, b=10),
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                font=dict(size=13)
+            )
+            st.plotly_chart(fig_cm, use_container_width=True)
+            st.markdown(f"<div class='chart-insight'><i class='fa-solid fa-lightbulb' style='color:#3B82F6;'></i> <b>TN={tn}</b> sahi Safe, <b>TP={tp}</b> sahi Churn pakray, <b>FP={fp}</b> ghalat alarm, <b>FN={fn}</b> miss hue churners.</div>", unsafe_allow_html=True)
+
+        # ── ROC Curve ──────────────────────────────────────────────────────
+        with col_roc:
+            if metrics["roc_data"]:
+                fpr = metrics["roc_data"]["fpr"]
+                tpr = metrics["roc_data"]["tpr"]
+                fig_roc = go.Figure()
+                fig_roc.add_trace(go.Scatter(
+                    x=fpr, y=tpr, mode='lines', name=f'EBM (AUC={metrics["auc"]}%)',
+                    line=dict(color='#6366F1', width=3),
+                    fill='tozeroy', fillcolor='rgba(99,102,241,0.1)'
+                ))
+                fig_roc.add_trace(go.Scatter(
+                    x=[0, 1], y=[0, 1], mode='lines', name='Random Classifier',
+                    line=dict(color='#94A3B8', dash='dash', width=1.5)
+                ))
+                fig_roc.update_layout(
+                    title="<b>ROC Curve — EBM vs Random Baseline</b>",
+                    xaxis_title="False Positive Rate (FPR)",
+                    yaxis_title="True Positive Rate (Recall)",
+                    height=340,
+                    margin=dict(l=10, r=10, t=50, b=10),
+                    legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)'
+                )
+                st.plotly_chart(fig_roc, use_container_width=True)
+                st.markdown("<div class='chart-insight'><i class='fa-solid fa-lightbulb' style='color:#3B82F6;'></i> Curve jitni upper-left corner ke qareeb ho, utna behtar model. Purple = EBM, grey dashed = coin toss baseline.</div>", unsafe_allow_html=True)
+
+        st.markdown("---")
+
+        # ── Feature Importance ─────────────────────────────────────────────
+        if metrics["feature_importance"]:
+            feat_names_list = [x[0] for x in metrics["feature_importance"]]
+            feat_vals_list  = [float(x[1]) for x in metrics["feature_importance"]]
+            fig_fi = go.Figure(go.Bar(
+                x=feat_vals_list[::-1],
+                y=feat_names_list[::-1],
+                orientation='h',
+                marker=dict(
+                    color=feat_vals_list[::-1],
+                    colorscale=[[0, '#EDE9FE'], [0.5, '#8B5CF6'], [1, '#4C1D95']],
+                    showscale=False
+                )
+            ))
+            fig_fi.update_layout(
+                title="<b>Top Feature Importances (EBM Glassbox)</b>",
+                xaxis_title="Importance Score",
+                yaxis_title="",
+                height=420,
+                margin=dict(l=10, r=10, t=50, b=10),
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)'
+            )
+            st.plotly_chart(fig_fi, use_container_width=True)
+            st.markdown("<div class='chart-insight'><i class='fa-solid fa-lightbulb' style='color:#3B82F6;'></i> <b>Insight:</b> Yeh chart dikhata hai AI ka churn prediction karte waqt kaunsa feature sabse zyada matter karta hai. Lambi bar = zyada ehmiyat.</div>", unsafe_allow_html=True)
+        else:
+            st.info("Feature importance chart EBM model se automatically extract ho raha hai. Agar nazar nahi aa raha tou model retraining karein.")
+
+        # ── Summary Stats Bar ──────────────────────────────────────────────
+        st.markdown(f"""
+        <div class="react-card" style="background:linear-gradient(135deg,#0F172A,#1E293B); border:1px solid #334155; margin-top:0.5rem;">
+            <div style="display:flex; gap:2rem; flex-wrap:wrap; align-items:center;">
+                <div style="color:#94A3B8; font-size:0.8rem;"><i class="fa-solid fa-database" style="color:#38BDF8;"></i> <b style="color:#F8FAFC;">Test Records:</b> {metrics['n_test']:,}</div>
+                <div style="color:#94A3B8; font-size:0.8rem;"><i class="fa-solid fa-layer-group" style="color:#A78BFA;"></i> <b style="color:#F8FAFC;">Features Used:</b> {metrics['n_features']}</div>
+                <div style="color:#94A3B8; font-size:0.8rem;"><i class="fa-solid fa-split" style="color:#34D399;"></i> <b style="color:#F8FAFC;">Split Strategy:</b> 80/20 Stratified</div>
+                <div style="color:#94A3B8; font-size:0.8rem;"><i class="fa-solid fa-robot" style="color:#FBBF24;"></i> <b style="color:#F8FAFC;">Algorithm:</b> Explainable Boosting Machine (EBM)</div>
+                <div style="color:#94A3B8; font-size:0.8rem;"><i class="fa-solid fa-code-branch" style="color:#F43F5E;"></i> <b style="color:#F8FAFC;">Library:</b> InterpretML (Microsoft)</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+# -----------------------------------------------------------------------------
+# 7. PAGE 4: PROJECT METHODOLOGY & ARCHITECTURE
 # -----------------------------------------------------------------------------
 elif navigation == "📖 Project Methodology & Architecture":
     st.markdown("""
