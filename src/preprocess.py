@@ -46,7 +46,7 @@ def engineer_rfm_features(df: pd.DataFrame) -> pd.DataFrame:
 def load_data(file_path: str = None) -> pd.DataFrame:
     """Loads the raw Kaggle e-commerce dataset for Training."""
     if file_path is None:
-        file_path = 'E Commerce Dataset.xlsx'
+        file_path = 'E Commerce Dataset Updated.xlsx'
 
     print(f"[*] Loading training dataset from: {file_path} ...")
     if not os.path.exists(file_path):

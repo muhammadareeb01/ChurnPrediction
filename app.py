@@ -417,7 +417,7 @@ model = load_app_model()
 @st.cache_data
 def load_kaggle_training_data():
     """Load the Kaggle E-Commerce Churn dataset used for model training."""
-    default_path = 'E Commerce Dataset.xlsx'
+    default_path = 'E Commerce Dataset Updated.xlsx'
     try:
         if os.path.exists(default_path):
             xf = pd.ExcelFile(default_path)
@@ -1083,7 +1083,7 @@ elif navigation == "📖 Project Methodology & Architecture":
         <div class='react-card' style='border-top: 3px solid #3B82F6;'>
             <div style='font-weight: 700; color: #1E293B; margin-bottom: 8px;'><i class='fa-solid fa-graduation-cap' style='color:#3B82F6;'></i> Phase 1: Training Data (Model Learning)</div>
             <ul style='font-size: 0.85rem; color: #475569;'>
-                <li><b>Dataset:</b> <code>E Commerce Dataset.xlsx</code> (Kaggle Benchmark)</li>
+                <li><b>Dataset:</b> <code>E Commerce Dataset Updated.xlsx</code> (Kaggle Benchmark)</li>
                 <li><b>Total Records:</b> <code>{kaggle_rows}</code> rows × <code>{kaggle_cols}</code> columns</li>
                 <li><b>Purpose:</b> Teaches the Glassbox AI the fundamental global patterns of customer churn.</li>
                 <li><b>Algorithm Input:</b> 15+ Features + Target <code>Churn</code> (Ground Truth).</li>
@@ -1241,7 +1241,7 @@ elif navigation == "⚙️ Data Hub & AI Retraining":
                         else:
                             df_new = pd.read_excel(uploaded_file)
                             
-                        master_path = "E Commerce Dataset.xlsx"
+                        master_path = "E Commerce Dataset Updated.xlsx"
                         
                         if btn_replace:
                             st.write("🗑️ Overwriting master database with new data...")
