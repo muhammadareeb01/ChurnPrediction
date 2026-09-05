@@ -46,12 +46,17 @@ def engineer_rfm_features(df: pd.DataFrame) -> pd.DataFrame:
 def load_data(file_path: str = None) -> pd.DataFrame:
     """Loads the raw Kaggle e-commerce dataset for Training."""
     if file_path is None:
-        file_path = 'data_ecommerce_customer_churn.csv'
+        file_path = 'E Commerce Dataset.xlsx'
 
     print(f"[*] Loading training dataset from: {file_path} ...")
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"Dataset not found at {file_path}")
-    df = pd.read_csv(file_path)
+    if file_path.endswith('.csv'):
+        df = pd.read_csv(file_path)
+    else:
+        xf = pd.ExcelFile(file_path)
+        sheet = 'E Comm' if 'E Comm' in xf.sheet_names else xf.sheet_names[0]
+        df = pd.read_excel(file_path, sheet_name=sheet)
     print(f"[+] Dataset loaded successfully! Initial Shape: {df.shape[0]} rows, {df.shape[1]} columns.")
     return df
 
@@ -161,7 +166,7 @@ def main():
     os.makedirs(processed_dir, exist_ok=True)
     os.makedirs(outputs_dir, exist_ok=True)
     
-    # 1. Load Data (EasyBazar dataset prioritized)
+    # 1. Load Data (E-Commerce dataset prioritized)
     df_raw = load_data()
     
     # 2. Analyze Missing Values before cleaning

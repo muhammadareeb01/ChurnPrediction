@@ -4,15 +4,16 @@ import os
 import numpy as np
 
 def create_dashboard_data():
-    print("[*] Loading EasyBazar dataset for dashboard prediction...")
-    if os.path.exists('EasyBazar_EBM_Dataset.xlsx'):
-        file_path = 'EasyBazar_EBM_Dataset.xlsx'
+    print("[*] Loading E-Commerce dataset for dashboard prediction...")
+    if os.path.exists('E Commerce Dataset.xlsx'):
+        file_path = 'E Commerce Dataset.xlsx'
         sheet_name = 'EBM_Churn_Data'
-    elif os.path.exists(os.path.join('data', 'raw', 'EasyBazar_EBM_Dataset.xlsx')):
-        file_path = os.path.join('data', 'raw', 'EasyBazar_EBM_Dataset.xlsx')
+    # Fallback to older ones if needed, or Kaggle CSV
+    elif os.path.exists(os.path.join('data', 'raw', 'E Commerce Dataset.xlsx')):
+        file_path = os.path.join('data', 'raw', 'E Commerce Dataset.xlsx')
         sheet_name = 'EBM_Churn_Data'
     else:
-        print("[!] EasyBazar dataset not found. Please provide 'EasyBazar_EBM_Dataset.xlsx'.")
+        print("[!] E-Commerce dataset not found. Please provide 'E Commerce Dataset.xlsx'.")
         return
         
     try:

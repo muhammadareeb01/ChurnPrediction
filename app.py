@@ -17,7 +17,7 @@ from sklearn.metrics import (
 # 1. STREAMLIT PAGE CONFIGURATION & REACT / NEXT.JS MODERN SAAS CSS
 # -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="EasyBazar | AI Churn Intelligence & Decision Engine",
+    page_title="E-Commerce | AI Churn Intelligence & Decision Engine",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -360,7 +360,6 @@ def load_app_model():
 def process_uploaded_file(uploaded_file, _model):
     if uploaded_file is None:
         return pd.DataFrame()
-        
     try:
         if uploaded_file.name.endswith('.csv'):
             df = pd.read_csv(uploaded_file)
@@ -415,6 +414,22 @@ def process_uploaded_file(uploaded_file, _model):
 
 model = load_app_model()
 
+@st.cache_data
+def load_kaggle_training_data():
+    """Load the Kaggle E-Commerce Churn dataset used for model training."""
+    default_path = 'E Commerce Dataset.xlsx'
+    try:
+        if os.path.exists(default_path):
+            xf = pd.ExcelFile(default_path)
+            sheet = 'E Comm' if 'E Comm' in xf.sheet_names else xf.sheet_names[0]
+            return pd.read_excel(default_path, sheet_name=sheet)
+        else:
+            return pd.DataFrame()
+    except Exception:
+        return pd.DataFrame()
+
+df_kaggle = load_kaggle_training_data()
+
 # -----------------------------------------------------------------------------
 # 3. SAAS SIDEBAR NAVIGATION
 # -----------------------------------------------------------------------------
@@ -425,7 +440,7 @@ with st.sidebar:
             <i class="fa-solid fa-cart-shopping"></i>
         </div>
         <div>
-            <div style="font-weight: 800; font-size: 1.05rem; color: #F8FAFC; letter-spacing: -0.01em;">EasyBazar AI</div>
+            <div style="font-weight: 800; font-size: 1.05rem; color: #F8FAFC; letter-spacing: -0.01em;">E-Commerce Churn AI</div>
             <div style="font-size: 0.7rem; color: #94A3B8; font-weight: 500;">Decision Support Platform</div>
         </div>
     </div>
@@ -441,6 +456,22 @@ with st.sidebar:
     
     if len(df_master) == 0:
         st.sidebar.warning("⚠️ Please upload a dataset to view dashboard insights.")
+    else:
+        st.markdown(f"""
+        <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 10px; padding: 0.6rem 0.75rem; margin-bottom: 0.8rem;">
+            <div style="font-size: 0.7rem; font-weight: 700; color: #38BDF8; margin-bottom: 4px;"><i class="fa-solid fa-database" style="margin-right: 4px;"></i> UPLOADED DATASET</div>
+            <div style="font-size: 0.72rem; color: #94A3B8; margin-top: 2px;">📊 <b>{len(df_master):,}</b> rows × <b>{len(df_master.columns)}</b> columns</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Always show Kaggle training data info
+    if not df_kaggle.empty:
+        st.markdown(f"""
+        <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 10px; padding: 0.6rem 0.75rem; margin-bottom: 0.8rem;">
+            <div style="font-size: 0.7rem; font-weight: 700; color: #34D399; margin-bottom: 4px;"><i class="fa-solid fa-graduation-cap" style="margin-right: 4px;"></i> TRAINING DATA (Kaggle)</div>
+            <div style="font-size: 0.72rem; color: #94A3B8; margin-top: 2px;">📊 <b>{len(df_kaggle):,}</b> rows × <b>{len(df_kaggle.columns)}</b> columns</div>
+        </div>
+        """, unsafe_allow_html=True)
     
     navigation = st.radio(
         "NAVIGATION",
@@ -661,7 +692,7 @@ elif navigation == "🎯 Retargeting Action Center":
             st.download_button(
                 label="📥 Export to CSV",
                 data=csv_data,
-                file_name="EasyBazar_Retargeting_List.csv",
+                file_name="Retargeting_List.csv",
                 mime="text/csv",
                 use_container_width=True
             )
@@ -759,15 +790,15 @@ elif navigation == "🎯 Retargeting Action Center":
                 if has_comp:
                     st.error("⚠️ **Primary Friction Driver:** Customer registered an unresolved complaint.")
                     strategy_badge = "Priority Apology Email & 20% Discount Voucher"
-                    msg_draft = f"Dear {cust_data.get('CustomerName', 'Customer')}, we noticed your recent complaint regarding your order on EasyBazar. We sincerely apologize for the inconvenience. Please accept this exclusive 20% discount code [EASYCARE20] for your next purchase."
+                    msg_draft = f"Dear {cust_data.get('CustomerName', 'Customer')}, we noticed your recent complaint regarding your order. We sincerely apologize for the inconvenience. Please accept this exclusive 20% discount code [EASYCARE20] for your next purchase."
                 elif inactivity > 15:
                     st.warning(f"⚠️ **Primary Friction Driver:** High Dormancy Risk ({inactivity} days inactive).")
                     strategy_badge = "Cart Re-engagement & Free Delivery Incentive"
-                    msg_draft = f"Assalam-o-Alaikum {cust_data.get('CustomerName', 'Customer')}! We miss you on EasyBazar. Your favorite items in {cust_data.get('ProductName', 'our store')} are waiting. Use code [FREESHIP] today for Free Cash-on-Delivery!"
+                    msg_draft = f"Assalam-o-Alaikum {cust_data.get('CustomerName', 'Customer')}! We miss you at our store. Your favorite items in {cust_data.get('ProductName', 'our store')} are waiting. Use code [FREESHIP] today for Free Cash-on-Delivery!"
                 elif orders <= 1:
                     st.info("💡 **Primary Friction Driver:** Single-order customer requiring onboarding trust.")
                     strategy_badge = "2nd Order Loyalty Bonus Reward"
-                    msg_draft = f"Hi {cust_data.get('CustomerName', 'Customer')}! Thanks for your first purchase on EasyBazar. Complete your 2nd order this week and unlock 2x EasyReward Points + 10% cashback."
+                    msg_draft = f"Hi {cust_data.get('CustomerName', 'Customer')}! Thanks for your first purchase. Complete your 2nd order this week and unlock 2x Reward Points + 10% cashback."
                 else:
                     st.success("✅ **Primary Driver:** Active regular customer.")
                     strategy_badge = "VIP Exclusive Catalog Preview"
@@ -1034,7 +1065,7 @@ elif navigation == "📖 Project Methodology & Architecture":
     
     st.markdown("### 🎯 1. Problem Statement & Research Objectives")
     st.markdown("""
-    E-Commerce SMEs in emerging markets (like EasyBazar) face fierce competition and high customer acquisition costs. Without predictive decision support, shopkeepers only discover customer departure **after** they churn.
+    E-Commerce SMEs in emerging markets face fierce competition and high customer acquisition costs. Without predictive decision support, shopkeepers only discover customer departure **after** they churn.
     
     **Thesis Contribution:**
     * Design an interpretable **Glassbox AI Engine (Explainable Boosting Machine - EBM)** predicting churn risk beforehand.
@@ -1046,11 +1077,14 @@ elif navigation == "📖 Project Methodology & Architecture":
     
     t_col1, t_col2 = st.columns(2)
     with t_col1:
-        st.markdown("""
+        kaggle_rows = f"{len(df_kaggle):,}" if not df_kaggle.empty else "N/A"
+        kaggle_cols = len(df_kaggle.columns) if not df_kaggle.empty else 0
+        st.markdown(f"""
         <div class='react-card' style='border-top: 3px solid #3B82F6;'>
             <div style='font-weight: 700; color: #1E293B; margin-bottom: 8px;'><i class='fa-solid fa-graduation-cap' style='color:#3B82F6;'></i> Phase 1: Training Data (Model Learning)</div>
             <ul style='font-size: 0.85rem; color: #475569;'>
                 <li><b>Dataset:</b> <code>E Commerce Dataset.xlsx</code> (Kaggle Benchmark)</li>
+                <li><b>Total Records:</b> <code>{kaggle_rows}</code> rows × <code>{kaggle_cols}</code> columns</li>
                 <li><b>Purpose:</b> Teaches the Glassbox AI the fundamental global patterns of customer churn.</li>
                 <li><b>Algorithm Input:</b> 15+ Features + Target <code>Churn</code> (Ground Truth).</li>
             </ul>
@@ -1058,25 +1092,29 @@ elif navigation == "📖 Project Methodology & Architecture":
         """, unsafe_allow_html=True)
 
     with t_col2:
+        if not df_master.empty:
+            inference_info = f"<code>{len(df_master):,}</code> Records Uploaded"
+        else:
+            inference_info = "<span style='color:#F59E0B;'>No dataset uploaded yet</span>"
         st.markdown(f"""
         <div class='react-card' style='border-top: 3px solid #10B981;'>
             <div style='font-weight: 700; color: #1E293B; margin-bottom: 8px;'><i class='fa-solid fa-rocket' style='color:#10B981;'></i> Phase 2: Inference Data (Real-world Application)</div>
             <ul style='font-size: 0.85rem; color: #475569;'>
-                <li><b>Dataset:</b> <code>EasyBazar_EBM_Dataset.xlsx</code> (Local SME)</li>
-                <li><b>Volume Executed:</b> <code>{len(df_master):,}</code> Unseen Records</li>
-                <li><b>Purpose:</b> Deploying trained intelligence on unseen SME data.</li>
+                <li><b>Dataset:</b> User-uploaded test dataset</li>
+                <li><b>Volume Executed:</b> {inference_info}</li>
+                <li><b>Purpose:</b> Deploying trained intelligence on unseen data.</li>
                 <li><b>AI Output:</b> <code>Churn AI ML</code> (Predicted Future Risk)</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
 
-    st.markdown("#### Feature Dictionary (EasyBazar Target Data)")
+    st.markdown("#### Feature Dictionary (E-Commerce Churn Data)")
     col_dict_data = [
-        {"Column Name": "CustomerID", "Type": "Identifier", "Description": "Unique customer account ID (e.g. EZB-10682)"},
+        {"Column Name": "CustomerID", "Type": "Identifier", "Description": "Unique customer account ID"},
         {"Column Name": "CustomerName", "Type": "Demographic", "Description": "Full name of the shopper"},
         {"Column Name": "ProductName", "Type": "Behavioral", "Description": "Most frequently purchased product category"},
-        {"Column Name": "COD_Amount", "Type": "Monetary", "Description": "Total Cash-on-Delivery order amount in PKR"},
-        {"Column Name": "Tenure", "Type": "Engagement", "Description": "Duration of relationship with EasyBazar in months"},
+        {"Column Name": "COD_Amount", "Type": "Monetary", "Description": "Total Cash-on-Delivery order amount"},
+        {"Column Name": "Tenure", "Type": "Engagement", "Description": "Duration of customer relationship in months"},
         {"Column Name": "DaySinceLastOrder", "Type": "Recency (RFM)", "Description": "Number of days elapsed since the customer's last order"},
         {"Column Name": "OrderCount", "Type": "Frequency (RFM)", "Description": "Total lifetime completed orders"},
         {"Column Name": "Complain", "Type": "Friction Signal", "Description": "Binary flag (1 = customer filed complaint, 0 = no complaint)"},
@@ -1110,36 +1148,58 @@ elif navigation == "📁 Complete Dataset Explorer":
     <div class="saas-header">
         <div>
             <div class="saas-title"><i class="fa-solid fa-database" style="color:#38BDF8;"></i> Complete Dataset Explorer</div>
-            <div class="saas-subtitle">Interactive inspection of all records with column sorting, statistics, and 1-click export.</div>
+            <div class="saas-subtitle">Interactive inspection of uploaded and training datasets with column sorting, statistics, and 1-click export.</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
     
-    # Download Button directly aligned to the right of the table heading
-    head_col, btn_col = st.columns([3.8, 1.2])
-    with head_col:
-        st.markdown(f"<div style='font-size:1rem; font-weight:700; color:#1E293B; margin-top:4px;'><i class='fa-solid fa-table' style='color:#2563EB; margin-right:6px;'></i> Master Registry (Showing {len(df_filtered)} rows × {len(df_filtered.columns)} columns)</div>", unsafe_allow_html=True)
-    with btn_col:
-        csv_full = df_filtered.to_csv(index=False).encode('utf-8')
-        st.download_button(
-            label="📥 Download Full Dataset (CSV)",
-            data=csv_full,
-            file_name="Full_Dataset.csv",
-            mime="text/csv",
-            use_container_width=True
-        )
-        
-    st.dataframe(df_filtered, use_container_width=True, height=480)
+    tab_uploaded, tab_kaggle = st.tabs(["📂 Uploaded Dataset", "🎓 Kaggle Training Data"])
     
-    st.markdown("<div style='margin-top: 1.5rem;'></div>", unsafe_allow_html=True)
-    st.markdown("#### 📊 Descriptive Numerical Statistics:")
-    try:
-        if not df_filtered.empty:
-            st.dataframe(df_filtered.describe().round(2), use_container_width=True)
+    with tab_uploaded:
+        if df_filtered.empty:
+            st.markdown("""
+            <div style="text-align: center; padding: 4rem 2rem;">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">📭</div>
+                <div style="font-size: 1.2rem; font-weight: 700; color: #1E293B; margin-bottom: 0.5rem;">No Dataset Uploaded</div>
+                <div style="font-size: 0.9rem; color: #64748B; max-width: 400px; margin: 0 auto;">Upload a CSV or Excel file from the sidebar to explore your dataset here. The AI model will automatically generate churn predictions.</div>
+            </div>
+            """, unsafe_allow_html=True)
         else:
-            st.info("No data available to display statistics.")
-    except ValueError:
-        st.info("No numerical data available to describe.")
+            head_col, btn_col = st.columns([3.8, 1.2])
+            with head_col:
+                st.markdown(f"<div style='font-size:1rem; font-weight:700; color:#1E293B; margin-top:4px;'><i class='fa-solid fa-table' style='color:#2563EB; margin-right:6px;'></i> Uploaded Data (Showing {len(df_filtered)} rows × {len(df_filtered.columns)} columns)</div>", unsafe_allow_html=True)
+            with btn_col:
+                csv_full = df_filtered.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="📥 Download Full Dataset (CSV)",
+                    data=csv_full,
+                    file_name="Full_Dataset.csv",
+                    mime="text/csv",
+                    use_container_width=True
+                )
+            st.dataframe(df_filtered, use_container_width=True, height=480)
+            
+            st.markdown("<div style='margin-top: 1.5rem;'></div>", unsafe_allow_html=True)
+            st.markdown("#### 📊 Descriptive Numerical Statistics:")
+            try:
+                st.dataframe(df_filtered.describe().round(2), use_container_width=True)
+            except ValueError:
+                st.info("No numerical columns to describe.")
+    
+    with tab_kaggle:
+        if df_kaggle.empty:
+            st.warning("Kaggle training dataset not found on server.")
+        else:
+            st.markdown(f"<div style='font-size:1rem; font-weight:700; color:#1E293B; margin-top:4px;'><i class='fa-solid fa-graduation-cap' style='color:#3B82F6; margin-right:6px;'></i> Kaggle E-Commerce Churn Dataset ({len(df_kaggle):,} rows × {len(df_kaggle.columns)} columns)</div>", unsafe_allow_html=True)
+            st.markdown("<div class='chart-insight'>This is the benchmark dataset used to <b>train</b> the EBM model. It contains ground-truth <code>Churn</code> labels for supervised learning.</div>", unsafe_allow_html=True)
+            st.dataframe(df_kaggle, use_container_width=True, height=480)
+            
+            st.markdown("<div style='margin-top: 1.5rem;'></div>", unsafe_allow_html=True)
+            st.markdown("#### 📊 Training Data Statistics:")
+            try:
+                st.dataframe(df_kaggle.describe().round(2), use_container_width=True)
+            except ValueError:
+                st.info("No numerical columns to describe.")
 
 # -----------------------------------------------------------------------------
 # 8. PAGE 5: DATA HUB & AI RETRAINING
@@ -1181,7 +1241,7 @@ elif navigation == "⚙️ Data Hub & AI Retraining":
                         else:
                             df_new = pd.read_excel(uploaded_file)
                             
-                        master_path = "EasyBazar_EBM_Dataset.xlsx"
+                        master_path = "E Commerce Dataset.xlsx"
                         
                         if btn_replace:
                             st.write("🗑️ Overwriting master database with new data...")
@@ -1191,7 +1251,7 @@ elif navigation == "⚙️ Data Hub & AI Retraining":
                             st.write("💾 Loading master database...")
                             if os.path.exists(master_path):
                                 try:
-                                    df_existing = pd.read_excel(master_path, sheet_name="EBM_Churn_Data")
+                                    df_existing = pd.read_excel(master_path, sheet_name="E Comm")
                                 except Exception:
                                     df_existing = pd.read_excel(master_path)
                             else:
@@ -1259,4 +1319,4 @@ elif navigation == "⚙️ Data Hub & AI Retraining":
 # -----------------------------------------------------------------------------
 # 9. COMPACT SAAS FOOTER
 # -----------------------------------------------------------------------------
-st.markdown("<div style='margin-top: 2rem; border-top: 1px solid #E2E8F0; padding: 1rem 0; text-align: center; color: #64748B; font-size: 0.78rem;'><b>EasyBazar AI Decision Support Framework</b> • Master of Engineering in Information Technology Thesis • MUET Jamshoro</div>", unsafe_allow_html=True)
+st.markdown("<div style='margin-top: 2rem; border-top: 1px solid #E2E8F0; padding: 1rem 0; text-align: center; color: #64748B; font-size: 0.78rem;'><b>E-Commerce Churn AI Decision Support Framework</b> • Master of Engineering in Information Technology Thesis • MUET Jamshoro</div>", unsafe_allow_html=True)
