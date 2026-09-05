@@ -27,320 +27,568 @@ st.set_page_config(
 st.markdown("""
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
+    /* Global Typography & Reset */
     * {
-        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    }
+
+    /* Core Streamlit Overrides */
+    .stApp {
+        background: radial-gradient(circle at 50% 0%, #111827 0%, #030712 100%) !important;
+        color: #F8FAFC !important;
+    }
+    
+    /* Hide top white header */
+    [data-testid="stHeader"] {
+        background-color: transparent !important;
+    }
+    .stApp > header {
+        background-color: transparent !important;
+    }
+
+    /* Main Container Padding */
+    .main .block-container {
+        padding-top: 2rem;
+        padding-bottom: 3rem;
+        padding-left: 3rem;
+        padding-right: 3rem;
+        max-width: 1440px;
     }
 
     /* Animations */
-    @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-    }
-    @keyframes slideUp {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* Streamlit block compacting */
-    .main .block-container {
-        padding-top: 1.2rem;
-        padding-bottom: 2rem;
-        padding-left: 2rem;
-        padding-right: 2rem;
-        max-width: 100%;
-    }
-
-    /* Next.js Top Navigation Header Banner */
+    /* ---------------------------------------------------
+       PREMIUM HEADER (.saas-header)
+    --------------------------------------------------- */
     .saas-header {
-        background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 16px;
-        padding: 1.2rem 1.6rem;
+        background: rgba(17, 24, 39, 0.7);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 20px;
+        padding: 1.5rem 2rem;
         color: white;
-        margin-bottom: 1.2rem;
+        margin-bottom: 2rem;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.15);
+        box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
         animation: fadeIn 0.8s ease-out, slideUp 0.6s ease-out;
     }
     .saas-title {
-        font-size: 1.5rem;
+        font-size: 1.75rem;
         font-weight: 800;
-        letter-spacing: -0.02em;
+        letter-spacing: -0.03em;
         display: flex;
         align-items: center;
-        gap: 0.6rem;
+        gap: 0.75rem;
+        background: linear-gradient(to right, #F8FAFC, #94A3B8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
     }
     .saas-subtitle {
-        font-size: 0.85rem;
+        font-size: 0.9rem;
         color: #94A3B8;
-        margin-top: 0.2rem;
+        margin-top: 0.4rem;
+        font-weight: 400;
     }
 
-    /* 3D Modern SaaS Metric Cards */
+    /* ---------------------------------------------------
+       METRIC CARDS (.metric-card)
+    --------------------------------------------------- */
     .metric-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 0.9rem;
-        margin-bottom: 1.2rem;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.25rem;
+        margin-bottom: 2rem;
     }
     .metric-card {
-        background: #FFFFFF;
-        border: 1px solid #E2E8F0;
-        border-radius: 14px;
-        padding: 1rem 1.2rem;
+        background: rgba(30, 41, 59, 0.5);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 16px;
+        padding: 1.25rem 1.5rem;
         position: relative;
         overflow: hidden;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.03);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.05);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         animation: fadeIn 0.6s ease-out, slideUp 0.5s ease-out;
         animation-fill-mode: both;
     }
-    .metric-card:nth-child(1) { animation-delay: 0.1s; }
-    .metric-card:nth-child(2) { animation-delay: 0.2s; }
-    .metric-card:nth-child(3) { animation-delay: 0.3s; }
-    .metric-card:nth-child(4) { animation-delay: 0.4s; }
-    .metric-card:nth-child(5) { animation-delay: 0.5s; }
+    .metric-card:nth-child(1) { animation-delay: 0.05s; }
+    .metric-card:nth-child(2) { animation-delay: 0.1s; }
+    .metric-card:nth-child(3) { animation-delay: 0.15s; }
+    .metric-card:nth-child(4) { animation-delay: 0.2s; }
+    .metric-card:nth-child(5) { animation-delay: 0.25s; }
+    
     .metric-card:hover {
-        transform: translateY(-4px) scale(1.02);
-        box-shadow: 0 12px 24px -5px rgba(15, 23, 42, 0.12);
-        border-color: #94A3B8;
+        transform: translateY(-5px) scale(1.02);
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3), 0 8px 10px -6px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.1);
+        border-color: rgba(255,255,255,0.15);
+        background: rgba(30, 41, 59, 0.7);
     }
     .metric-card::before {
         content: "";
         position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 3px;
+        top: 0; left: 0; right: 0;
+        height: 2px;
+        opacity: 0.8;
     }
-    .metric-blue::before { background: linear-gradient(90deg, #3B82F6, #60A5FA); }
-    .metric-rose::before { background: linear-gradient(90deg, #F43F5E, #FB7185); }
-    .metric-emerald::before { background: linear-gradient(90deg, #10B981, #34D399); }
-    .metric-amber::before { background: linear-gradient(90deg, #F59E0B, #FBBF24); }
-    .metric-indigo::before { background: linear-gradient(90deg, #6366F1, #818CF8); }
+    .metric-blue::before { background: linear-gradient(90deg, #3B82F6, #06B6D4); }
+    .metric-rose::before { background: linear-gradient(90deg, #F43F5E, #E11D48); }
+    .metric-emerald::before { background: linear-gradient(90deg, #10B981, #059669); }
+    .metric-amber::before { background: linear-gradient(90deg, #F59E0B, #D97706); }
+    .metric-indigo::before { background: linear-gradient(90deg, #6366F1, #8B5CF6); }
 
     .metric-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 0.4rem;
+        margin-bottom: 0.75rem;
     }
     .metric-label {
-        font-size: 0.76rem;
+        font-size: 0.75rem;
         text-transform: uppercase;
-        font-weight: 700;
-        color: #64748B;
-        letter-spacing: 0.04em;
+        font-weight: 600;
+        color: #94A3B8;
+        letter-spacing: 0.05em;
     }
     .metric-icon {
-        width: 32px;
-        height: 32px;
-        border-radius: 8px;
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 0.95rem;
+        font-size: 1.1rem;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);
     }
-    .icon-blue { background: #EFF6FF; color: #2563EB; }
-    .icon-rose { background: #FFF1F2; color: #E11D48; }
-    .icon-emerald { background: #ECFDF5; color: #059669; }
-    .icon-amber { background: #FFFBEB; color: #D97706; }
-    .icon-indigo { background: #EEF2FF; color: #4F46E5; }
+    .icon-blue { background: rgba(59, 130, 246, 0.15); color: #60A5FA; border: 1px solid rgba(59, 130, 246, 0.2); }
+    .icon-rose { background: rgba(244, 63, 94, 0.15); color: #FB7185; border: 1px solid rgba(244, 63, 94, 0.2); }
+    .icon-emerald { background: rgba(16, 185, 129, 0.15); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.2); }
+    .icon-amber { background: rgba(245, 158, 11, 0.15); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.2); }
+    .icon-indigo { background: rgba(99, 102, 241, 0.15); color: #818CF8; border: 1px solid rgba(99, 102, 241, 0.2); }
 
     .metric-num {
-        font-size: 1.65rem;
+        font-size: 1.8rem;
         font-weight: 800;
-        color: #0F172A;
-        line-height: 1.1;
-        margin-bottom: 0.2rem;
+        color: #F8FAFC;
+        line-height: 1.2;
+        margin-bottom: 0.25rem;
     }
     .metric-detail {
-        font-size: 0.76rem;
+        font-size: 0.8rem;
         color: #64748B;
         font-weight: 500;
     }
 
-    /* React-like Card Container */
+    /* ---------------------------------------------------
+       GLASS CARDS (.react-card)
+    --------------------------------------------------- */
     .react-card {
-        background: #FFFFFF;
-        border: 1px solid #E2E8F0;
-        border-radius: 14px;
-        padding: 1.2rem;
-        margin-bottom: 1rem;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+        background: rgba(30, 41, 59, 0.4);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05);
         animation: fadeIn 0.8s ease-out, slideUp 0.7s ease-out;
         transition: all 0.3s ease;
     }
     .react-card:hover {
-        box-shadow: 0 8px 16px -4px rgba(15, 23, 42, 0.08);
-        transform: translateY(-2px);
+        border-color: rgba(255, 255, 255, 0.1);
+        background: rgba(30, 41, 59, 0.6);
     }
     .react-card-title {
-        font-size: 0.95rem;
+        font-size: 1.05rem;
         font-weight: 700;
-        color: #0F172A;
+        color: #E2E8F0;
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        margin-bottom: 0.8rem;
+        margin-bottom: 1.25rem;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        padding-bottom: 0.75rem;
     }
 
-    /* Chart Explanation Mini-Chip */
+    /* Insight Chip */
     .chart-insight {
-        background: #F8FAFC;
+        background: rgba(59, 130, 246, 0.1);
         border-left: 3px solid #3B82F6;
-        padding: 0.5rem 0.8rem;
-        border-radius: 0 6px 6px 0;
-        font-size: 0.78rem;
-        color: #475569;
-        margin-top: -0.3rem;
-        margin-bottom: 0.8rem;
+        padding: 0.75rem 1rem;
+        border-radius: 0 8px 8px 0;
+        font-size: 0.85rem;
+        color: #CBD5E1;
+        margin-top: 0;
+        margin-bottom: 1.25rem;
+        box-shadow: inset 0 0 20px rgba(59,130,246,0.02);
     }
 
-    /* Status Badges */
+    /* ---------------------------------------------------
+       STATUS BADGES
+    --------------------------------------------------- */
     .badge {
         display: inline-flex;
         align-items: center;
-        gap: 0.3rem;
-        padding: 0.2rem 0.55rem;
-        border-radius: 6px;
-        font-size: 0.72rem;
-        font-weight: 700;
+        gap: 0.4rem;
+        padding: 0.25rem 0.6rem;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
     }
     .badge-churn {
-        background: #FEE2E2;
-        color: #B91C1C;
-        border: 1px solid #FECACA;
+        background: rgba(225, 29, 72, 0.15);
+        color: #FDA4AF;
+        border: 1px solid rgba(225, 29, 72, 0.3);
     }
     .badge-safe {
-        background: #DCFCE7;
-        color: #15803D;
-        border: 1px solid #BBF7D0;
+        background: rgba(16, 185, 129, 0.15);
+        color: #6EE7B7;
+        border: 1px solid rgba(16, 185, 129, 0.3);
     }
     .pulse-dot {
-        width: 6px;
-        height: 6px;
+        width: 8px;
+        height: 8px;
         border-radius: 50%;
         display: inline-block;
     }
-    .pulse-red { background: #DC2626; box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2); }
-    .pulse-green { background: #16A34A; box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.2); }
+    .pulse-red { background: #EF4444; box-shadow: 0 0 10px #EF4444, 0 0 0 3px rgba(239,68,68,0.2); }
+    .pulse-green { background: #10B981; box-shadow: 0 0 10px #10B981, 0 0 0 3px rgba(16,185,129,0.2); }
 
-    /* Next.js Styled Table Container */
+    /* ---------------------------------------------------
+       TABLES (.saas-table)
+    --------------------------------------------------- */
     .saas-table-container {
-        border: 1px solid #E2E8F0;
+        border: 1px solid rgba(255,255,255,0.08);
         border-radius: 12px;
         overflow: hidden;
-        background: #FFFFFF;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        background: rgba(15, 23, 42, 0.5);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);
         animation: fadeIn 0.7s ease-out;
     }
     .saas-table {
         width: 100%;
         border-collapse: collapse;
         text-align: left;
-        font-size: 0.82rem;
+        font-size: 0.85rem;
     }
     .saas-table th {
-        background: #F8FAFC;
-        color: #475569;
-        font-weight: 700;
-        padding: 0.75rem 1rem;
-        border-bottom: 1px solid #E2E8F0;
+        background: rgba(30, 41, 59, 0.8);
+        color: #94A3B8;
+        font-weight: 600;
+        padding: 1rem;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
         text-transform: uppercase;
-        letter-spacing: 0.03em;
-        font-size: 0.72rem;
+        letter-spacing: 0.05em;
+        font-size: 0.75rem;
     }
     .saas-table td {
-        padding: 0.7rem 1rem;
-        border-bottom: 1px solid #F1F5F9;
-        color: #1E293B;
-    }
-    .saas-table tr:last-child td {
-        border-bottom: none;
+        padding: 0.85rem 1rem;
+        border-bottom: 1px solid rgba(255,255,255,0.03);
+        color: #E2E8F0;
     }
     .saas-table tr:hover td {
-        background: #F8FAFC;
+        background: rgba(59, 130, 246, 0.05);
     }
 
-    /* Sidebar Dark SaaS Theme */
+    /* ---------------------------------------------------
+       SIDEBAR OVERRIDES
+    --------------------------------------------------- */
     [data-testid="stSidebar"] {
-        background-color: #0B1120;
-        border-right: 1px solid #1E293B;
+        background: rgba(15, 23, 42, 0.85) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
     }
     [data-testid="stSidebar"] .block-container {
-        padding-top: 1.5rem;
+        padding-top: 0.5rem !important;
     }
     .sidebar-brand {
         display: flex;
         align-items: center;
-        gap: 0.7rem;
-        padding: 0.5rem 0.2rem 1rem 0.2rem;
-        border-bottom: 1px solid #1E293B;
+        gap: 0.75rem;
+        padding: 0.5rem 0.5rem 1rem 0.5rem;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
         margin-bottom: 1rem;
     }
     .sidebar-brand-icon {
-        width: 36px;
-        height: 36px;
-        background: linear-gradient(135deg, #38BDF8 0%, #2563EB 100%);
-        border-radius: 10px;
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #06B6D4 0%, #3B82F6 100%);
+        border-radius: 12px;
         display: flex;
         align-items: center;
         justify-content: center;
         color: white;
+        font-size: 1.25rem;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+    .sidebar-brand span {
+        color: #F8FAFC !important;
+        font-weight: 800;
         font-size: 1.1rem;
-        box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+        letter-spacing: -0.02em;
     }
     .sidebar-status-pill {
         display: inline-flex;
         align-items: center;
-        gap: 0.4rem;
-        background: rgba(16, 185, 129, 0.1);
-        border: 1px solid rgba(16, 185, 129, 0.2);
-        color: #34D399;
-        font-size: 0.7rem;
+        gap: 0.5rem;
+        background: rgba(16, 185, 129, 0.15);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        color: #10B981;
+        font-size: 0.75rem;
         font-weight: 600;
-        padding: 0.2rem 0.6rem;
+        padding: 0.3rem 0.75rem;
         border-radius: 20px;
-        margin-bottom: 0.8rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 0 15px rgba(16, 185, 129, 0.1);
     }
 
-    /* Sleek Streamlit Widgets Tweaks */
-    .stDownloadButton button {
-        background: #2563EB !important;
-        color: white !important;
-        border: none !important;
-        border-radius: 8px !important;
-        font-weight: 600 !important;
-        font-size: 0.82rem !important;
-        padding: 0.4rem 0.9rem !important;
-        transition: background 0.15s ease !important;
+    /* Style Streamlit Navigation Radio Buttons inside Sidebar */
+    [data-testid="stSidebar"] .stRadio > div { gap: 0.5rem; }
+    [data-testid="stSidebar"] .stRadio label {
+        background: transparent !important;
+        padding: 0.75rem 1rem;
+        border-radius: 10px;
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
     }
-    .stDownloadButton button:hover {
-        background: #1D4ED8 !important;
+    [data-testid="stSidebar"] .stRadio label:hover {
+        background: rgba(255, 255, 255, 0.03) !important;
+        border-color: rgba(255,255,255,0.05);
+    }
+    [data-testid="stSidebar"] .stRadio div[data-baseweb="radio"] div {
+        color: #94A3B8 !important;
+        font-weight: 500 !important;
+        font-size: 0.95rem;
+    }
+    /* Hide the actual radio circle */
+    [data-testid="stSidebar"] .stRadio div[data-baseweb="radio"] > div:first-child {
+        display: none;
+    }
+
+    /* ---------------------------------------------------
+       STREAMLIT DEFAULT COMPONENT OVERRIDES
+    --------------------------------------------------- */
+    
+    /* Input Fields (Selectbox, TextInput, FileUploader) */
+    .stSelectbox > div > div, 
+    .stMultiSelect > div > div, 
+    .stTextInput > div > div, 
+    .stNumberInput > div > div,
+    .stFileUploader {
+        background: rgba(15, 23, 42, 0.6) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 10px !important;
+        color: #F8FAFC !important;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.2) !important;
+    }
+    .stSelectbox > div > div:focus-within, 
+    .stTextInput > div > div:focus-within {
+        border-color: #3B82F6 !important;
+        box-shadow: 0 0 0 2px rgba(59,130,246,0.3) !important;
     }
     
-    /* Streamlit Tabs */
+    /* Buttons */
+    .stButton > button {
+        background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%) !important;
+        color: white !important;
+        border: 1px solid rgba(255,255,255,0.1) !important;
+        border-radius: 10px !important;
+        font-weight: 600 !important;
+        font-size: 0.9rem !important;
+        padding: 0.5rem 1.25rem !important;
+        box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.4), inset 0 1px 0 rgba(255,255,255,0.2) !important;
+        transition: all 0.2s ease !important;
+    }
+    .stButton > button:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 8px 12px -2px rgba(37, 99, 235, 0.5), inset 0 1px 0 rgba(255,255,255,0.2) !important;
+        background: linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%) !important;
+    }
+    
+    .stDownloadButton button {
+        background: linear-gradient(135deg, #10B981 0%, #059669 100%) !important;
+        box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.4) !important;
+    }
+    .stDownloadButton button:hover {
+        background: linear-gradient(135deg, #34D399 0%, #10B981 100%) !important;
+        box-shadow: 0 8px 12px -2px rgba(16, 185, 129, 0.5) !important;
+    }
+
+    /* Tabs */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        border-bottom: 1px solid #E2E8F0;
-        padding-bottom: 4px;
+        gap: 0.5rem;
+        background: rgba(15, 23, 42, 0.4);
+        padding: 0.5rem;
+        border-radius: 12px;
+        border-bottom: none !important;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
     }
     .stTabs [data-baseweb="tab"] {
         border-radius: 8px;
-        padding: 6px 14px;
+        padding: 0.5rem 1.25rem;
         font-weight: 600;
-        font-size: 0.85rem;
-        color: #64748B;
+        font-size: 0.9rem;
+        color: #94A3B8;
+        border: 1px solid transparent !important;
+        background: transparent !important;
     }
     .stTabs [aria-selected="true"] {
-        background: #EFF6FF !important;
-        color: #2563EB !important;
+        background: rgba(30, 41, 59, 0.8) !important;
+        color: #F8FAFC !important;
+        border: 1px solid rgba(255,255,255,0.05) !important;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2) !important;
     }
+    
+    /* Expander */
+    .streamlit-expanderHeader {
+        background: rgba(30, 41, 59, 0.4) !important;
+        border-radius: 10px !important;
+        color: #F8FAFC !important;
+        border: 1px solid rgba(255,255,255,0.05) !important;
+    }
+    
+    /* Streamlit Metric Overrides */
+    [data-testid="stMetricValue"] { color: #F8FAFC !important; font-weight: 800 !important; }
+    [data-testid="stMetricLabel"] { color: #94A3B8 !important; font-weight: 600 !important; }
+
+    /* Tooltip / Warning / Info */
+    .stAlert {
+        background: rgba(15, 23, 42, 0.6) !important;
+        border: 1px solid rgba(255,255,255,0.1) !important;
+        backdrop-filter: blur(10px) !important;
+        color: #E2E8F0 !important;
+        border-radius: 12px !important;
+    }
+
+    /* Badge Primary (for Feature Dictionary etc) */
+    .badge-primary {
+        background: rgba(59, 130, 246, 0.12);
+        color: #60A5FA;
+        border: 1px solid rgba(59, 130, 246, 0.25);
+    }
+
+    /* Streamlit Dataframe Dark Mode Override */
+    .stDataFrame, [data-testid="stDataFrame"] {
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    [data-testid="stDataFrame"] > div {
+        border: 1px solid rgba(255,255,255,0.08) !important;
+        border-radius: 12px !important;
+    }
+
+    /* Progress Bar Override */
+    .stProgress > div > div > div {
+        background: linear-gradient(90deg, #3B82F6 0%, #06B6D4 100%) !important;
+        border-radius: 10px !important;
+    }
+    .stProgress > div > div {
+        background: rgba(30, 41, 59, 0.6) !important;
+        border-radius: 10px !important;
+    }
+
+    /* Caption / Small text */
+    .stCaption, [data-testid="stCaptionContainer"] {
+        color: #64748B !important;
+    }
+
+    /* Plotly Chart Container Styling */
+    .js-plotly-plot, .plotly {
+        border-radius: 12px;
+    }
+
+    /* Markdown text paragraphs */
+    .stMarkdown p {
+        color: #CBD5E1;
+    }
+    .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown h4 {
+        color: #F8FAFC !important;
+    }
+    .stMarkdown strong, .stMarkdown b {
+        color: #E2E8F0;
+    }
+    .stMarkdown code {
+        background: rgba(59, 130, 246, 0.1) !important;
+        color: #60A5FA !important;
+        padding: 0.15rem 0.4rem !important;
+        border-radius: 6px !important;
+        font-size: 0.85em !important;
+    }
+
+    /* Horizontal Rule */
+    .stMarkdown hr {
+        border-color: rgba(255,255,255,0.08) !important;
+    }
+
+    /* Text Input Placeholder */
+    .stTextInput input::placeholder {
+        color: #64748B !important;
+    }
+
+    /* Expander Content */
+    .streamlit-expanderContent {
+        background: rgba(15, 23, 42, 0.4) !important;
+        border: 1px solid rgba(255,255,255,0.05) !important;
+        border-top: none !important;
+        border-radius: 0 0 10px 10px !important;
+    }
+
+    /* Streamlit Table (st.table, st.dataframe markdown tables) */
+    .stMarkdown table {
+        background: rgba(30, 41, 59, 0.4);
+        border-collapse: collapse;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .stMarkdown table th {
+        background: rgba(30, 41, 59, 0.8) !important;
+        color: #94A3B8 !important;
+        border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+        padding: 0.75rem 1rem !important;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        font-size: 0.8rem;
+    }
+    .stMarkdown table td {
+        color: #E2E8F0 !important;
+        border-bottom: 1px solid rgba(255,255,255,0.03) !important;
+        padding: 0.6rem 1rem !important;
+    }
+    .stMarkdown table tr:hover td {
+        background: rgba(59, 130, 246, 0.05) !important;
+    }
+
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.5); }
+    ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.2); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.4); }
+
+    /* Add Icon Hover Animations */
+    .fa-solid:hover {
+        transform: scale(1.1);
+        transition: transform 0.2s ease;
+    }
+    .metric-icon:hover .fa-solid {
+        animation: fa-beat 1s infinite;
+    }
+    .sidebar-brand-icon .fa-solid {
+        animation: fa-bounce 2s infinite;
+    }
+    
 </style>
 """, unsafe_allow_html=True)
 
@@ -612,11 +860,14 @@ if navigation == "📊 Executive AI Dashboard":
                 barmode='stack',
                 xaxis_title="Number of Customers",
                 yaxis_title="",
-                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(color='#94A3B8')),
                 height=340,
                 margin=dict(l=10, r=10, t=45, b=10),
                 paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)'
+                plot_bgcolor='rgba(0,0,0,0)',
+                font=dict(color='#E2E8F0'),
+                xaxis=dict(gridcolor='rgba(255,255,255,0.05)'),
+                yaxis=dict(gridcolor='rgba(255,255,255,0.05)')
             )
             st.plotly_chart(fig1, use_container_width=True)
             st.markdown("<div class='chart-insight'><i class='fa-solid fa-lightbulb' style='color:#3B82F6;'></i> <b>Insight:</b> Shows customer retention volume across each product. Red bars highlight critical at-risk customers needing immediate retargeting.</div>", unsafe_allow_html=True)
@@ -631,7 +882,7 @@ if navigation == "📊 Executive AI Dashboard":
                 labels={pred_col: 'Prediction (0=Safe, 1=Churn)', 'COD_Amount': 'COD Order Value (PKR)'},
                 title="<b>3. Order Monetary Value (COD) vs. Churn Risk</b>"
             )
-            fig3.update_layout(height=340, showlegend=False, margin=dict(l=10, r=10, t=45, b=10), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+            fig3.update_layout(height=340, showlegend=False, margin=dict(l=10, r=10, t=45, b=10), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color='#E2E8F0'), xaxis=dict(gridcolor='rgba(255,255,255,0.05)'), yaxis=dict(gridcolor='rgba(255,255,255,0.05)'))
             st.plotly_chart(fig3, use_container_width=True)
             st.markdown("<div class='chart-insight'><i class='fa-solid fa-lightbulb' style='color:#3B82F6;'></i> <b>Insight:</b> Box plot compares purchasing power between loyal and churn-risk buyers to prevent high-ticket revenue loss.</div>", unsafe_allow_html=True)
 
@@ -641,7 +892,7 @@ if navigation == "📊 Executive AI Dashboard":
             tier_df['TierLabel'] = [f"City Tier {t}" for t in tier_df['CityTier']]
             
             fig2 = px.pie(tier_df, names='TierLabel', values='ChurnCount', hole=0.45, color_discrete_sequence=['#3B82F6', '#8B5CF6', '#EC4899'], title="<b>2. Churn Risk Share by City Tier</b>")
-            fig2.update_layout(height=340, margin=dict(l=10, r=10, t=45, b=10), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+            fig2.update_layout(height=340, margin=dict(l=10, r=10, t=45, b=10), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color='#E2E8F0'), legend=dict(font=dict(color='#94A3B8')))
             st.plotly_chart(fig2, use_container_width=True)
             st.markdown("<div class='chart-insight'><i class='fa-solid fa-lightbulb' style='color:#3B82F6;'></i> <b>Insight:</b> Identifies geographic regions with highest dissatisfaction, pinpointing logistics latency bottlenecks.</div>", unsafe_allow_html=True)
             
@@ -656,7 +907,7 @@ if navigation == "📊 Executive AI Dashboard":
                 title="<b>4. RFM Recency vs. Tenure Risk Quadrants</b>",
                 hover_data=['CustomerName', 'ProductName'] if 'CustomerName' in df_filtered.columns else None
             )
-            fig4.update_layout(height=340, margin=dict(l=10, r=10, t=45, b=10), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+            fig4.update_layout(height=340, margin=dict(l=10, r=10, t=45, b=10), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color='#E2E8F0'), legend=dict(font=dict(color='#94A3B8')), xaxis=dict(gridcolor='rgba(255,255,255,0.05)'), yaxis=dict(gridcolor='rgba(255,255,255,0.05)'))
             st.plotly_chart(fig4, use_container_width=True)
             st.markdown("<div class='chart-insight'><i class='fa-solid fa-lightbulb' style='color:#3B82F6;'></i> <b>Insight:</b> Upper-left cluster represents newly registered users who went dormant quickly—prime candidates for re-engagement.</div>", unsafe_allow_html=True)
 
@@ -686,7 +937,7 @@ elif navigation == "🎯 Retargeting Action Center":
         # Header with Download Button Right-Aligned
         head_col, btn_col = st.columns([3.5, 1])
         with head_col:
-            st.markdown("<div style='font-size:1rem; font-weight:700; color:#1E293B; margin-top:4px;'><i class='fa-solid fa-table-list' style='color:#2563EB; margin-right:6px;'></i> Customer Risk Registry</div>", unsafe_allow_html=True)
+            st.markdown("<div style='font-size:1rem; font-weight:700; color:#F8FAFC; margin-top:4px;'><i class='fa-solid fa-table-list' style='color:#3B82F6; margin-right:6px;'></i> Customer Risk Registry</div>", unsafe_allow_html=True)
         with btn_col:
             csv_data = df_filtered[show_cols].to_csv(index=False).encode('utf-8')
             st.download_button(
@@ -827,7 +1078,7 @@ elif navigation == "🤖 AI Model Performance":
             <div class="saas-subtitle">Live evaluation metrics computed on held-out test set (400 records) using the trained Explainable Boosting Machine (EBM).</div>
         </div>
         <div style="text-align:right;">
-            <span class="badge" style="background:#EDE9FE;color:#6D28D9;border:1px solid #C4B5FD;"><i class="fa-solid fa-flask"></i> Kaggle Test Set</span>
+            <span class="badge" style="background:rgba(139,92,246,0.15);color:#A78BFA;border:1px solid rgba(139,92,246,0.3);"><i class="fa-solid fa-flask"></i> Kaggle Test Set</span>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -963,8 +1214,8 @@ elif navigation == "🤖 AI Model Performance":
                 text=[[f"TN\n{tn}", f"FP\n{fp}"], [f"FN\n{fn}", f"TP\n{tp}"]],
                 texttemplate="<b>%{text}</b>",
                 colorscale=[
-                    [0.0, "#F0FDF4"], [0.3, "#86EFAC"],
-                    [0.6, "#22C55E"], [1.0, "#15803D"]
+                    [0.0, "#0F172A"], [0.3, "#1E3A5F"],
+                    [0.6, "#2563EB"], [1.0, "#3B82F6"]
                 ],
                 showscale=False
             ))
@@ -974,7 +1225,7 @@ elif navigation == "🤖 AI Model Performance":
                 margin=dict(l=10, r=10, t=50, b=10),
                 paper_bgcolor='rgba(0,0,0,0)',
                 plot_bgcolor='rgba(0,0,0,0)',
-                font=dict(size=13)
+                font=dict(size=13, color='#E2E8F0')
             )
             st.plotly_chart(fig_cm, use_container_width=True)
             st.markdown(f"<div class='chart-insight'><i class='fa-solid fa-lightbulb' style='color:#3B82F6;'></i> <b>TN={tn}</b> sahi Safe, <b>TP={tp}</b> sahi Churn pakray, <b>FP={fp}</b> ghalat alarm, <b>FN={fn}</b> miss hue churners.</div>", unsafe_allow_html=True)
@@ -1000,9 +1251,12 @@ elif navigation == "🤖 AI Model Performance":
                     yaxis_title="True Positive Rate (Recall)",
                     height=340,
                     margin=dict(l=10, r=10, t=50, b=10),
-                    legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
+                    legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1, font=dict(color='#94A3B8')),
                     paper_bgcolor='rgba(0,0,0,0)',
-                    plot_bgcolor='rgba(0,0,0,0)'
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    font=dict(color='#E2E8F0'),
+                    xaxis=dict(gridcolor='rgba(255,255,255,0.05)', zerolinecolor='rgba(255,255,255,0.1)'),
+                    yaxis=dict(gridcolor='rgba(255,255,255,0.05)', zerolinecolor='rgba(255,255,255,0.1)')
                 )
                 st.plotly_chart(fig_roc, use_container_width=True)
                 st.markdown("<div class='chart-insight'><i class='fa-solid fa-lightbulb' style='color:#3B82F6;'></i> Curve jitni upper-left corner ke qareeb ho, utna behtar model. Purple = EBM, grey dashed = coin toss baseline.</div>", unsafe_allow_html=True)
@@ -1030,7 +1284,10 @@ elif navigation == "🤖 AI Model Performance":
                 height=420,
                 margin=dict(l=10, r=10, t=50, b=10),
                 paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)'
+                plot_bgcolor='rgba(0,0,0,0)',
+                font=dict(color='#E2E8F0'),
+                xaxis=dict(gridcolor='rgba(255,255,255,0.05)'),
+                yaxis=dict(gridcolor='rgba(255,255,255,0.05)')
             )
             st.plotly_chart(fig_fi, use_container_width=True)
             st.markdown("<div class='chart-insight'><i class='fa-solid fa-lightbulb' style='color:#3B82F6;'></i> <b>Insight:</b> Yeh chart dikhata hai AI ka churn prediction karte waqt kaunsa feature sabse zyada matter karta hai. Lambi bar = zyada ehmiyat.</div>", unsafe_allow_html=True)
@@ -1039,7 +1296,7 @@ elif navigation == "🤖 AI Model Performance":
 
         # ── Summary Stats Bar ──────────────────────────────────────────────
         st.markdown(f"""
-        <div class="react-card" style="background:linear-gradient(135deg,#0F172A,#1E293B); border:1px solid #334155; margin-top:0.5rem;">
+        <div class="react-card" style="background:rgba(15,23,42,0.6); border:1px solid rgba(255,255,255,0.05); margin-top:0.5rem; box-shadow:none;">
             <div style="display:flex; gap:2rem; flex-wrap:wrap; align-items:center;">
                 <div style="color:#94A3B8; font-size:0.8rem;"><i class="fa-solid fa-database" style="color:#38BDF8;"></i> <b style="color:#F8FAFC;">Test Records:</b> {metrics['n_test']:,}</div>
                 <div style="color:#94A3B8; font-size:0.8rem;"><i class="fa-solid fa-layer-group" style="color:#A78BFA;"></i> <b style="color:#F8FAFC;">Features Used:</b> {metrics['n_features']}</div>
@@ -1081,8 +1338,8 @@ elif navigation == "📖 Project Methodology & Architecture":
         kaggle_cols = len(df_kaggle.columns) if not df_kaggle.empty else 0
         st.markdown(f"""
         <div class='react-card' style='border-top: 3px solid #3B82F6;'>
-            <div style='font-weight: 700; color: #1E293B; margin-bottom: 8px;'><i class='fa-solid fa-graduation-cap' style='color:#3B82F6;'></i> Phase 1: Training Data (Model Learning)</div>
-            <ul style='font-size: 0.85rem; color: #475569;'>
+            <div style='font-weight: 700; color: #F8FAFC; margin-bottom: 8px;'><i class='fa-solid fa-graduation-cap' style='color:#3B82F6;'></i> Phase 1: Training Data (Model Learning)</div>
+            <ul style='font-size: 0.85rem; color: #94A3B8;'>
                 <li><b>Dataset:</b> <code>E Commerce Dataset Updated.xlsx</code> (Kaggle Benchmark)</li>
                 <li><b>Total Records:</b> <code>{kaggle_rows}</code> rows × <code>{kaggle_cols}</code> columns</li>
                 <li><b>Purpose:</b> Teaches the Glassbox AI the fundamental global patterns of customer churn.</li>
@@ -1098,8 +1355,8 @@ elif navigation == "📖 Project Methodology & Architecture":
             inference_info = "<span style='color:#F59E0B;'>No dataset uploaded yet</span>"
         st.markdown(f"""
         <div class='react-card' style='border-top: 3px solid #10B981;'>
-            <div style='font-weight: 700; color: #1E293B; margin-bottom: 8px;'><i class='fa-solid fa-rocket' style='color:#10B981;'></i> Phase 2: Inference Data (Real-world Application)</div>
-            <ul style='font-size: 0.85rem; color: #475569;'>
+            <div style='font-weight: 700; color: #F8FAFC; margin-bottom: 8px;'><i class='fa-solid fa-rocket' style='color:#10B981;'></i> Phase 2: Inference Data (Real-world Application)</div>
+            <ul style='font-size: 0.85rem; color: #94A3B8;'>
                 <li><b>Dataset:</b> User-uploaded test dataset</li>
                 <li><b>Volume Executed:</b> {inference_info}</li>
                 <li><b>Purpose:</b> Deploying trained intelligence on unseen data.</li>
@@ -1160,14 +1417,14 @@ elif navigation == "📁 Complete Dataset Explorer":
             st.markdown("""
             <div style="text-align: center; padding: 4rem 2rem;">
                 <div style="font-size: 3rem; margin-bottom: 1rem;">📭</div>
-                <div style="font-size: 1.2rem; font-weight: 700; color: #1E293B; margin-bottom: 0.5rem;">No Dataset Uploaded</div>
-                <div style="font-size: 0.9rem; color: #64748B; max-width: 400px; margin: 0 auto;">Upload a CSV or Excel file from the sidebar to explore your dataset here. The AI model will automatically generate churn predictions.</div>
+                <div style="font-size: 1.2rem; font-weight: 700; color: #F8FAFC; margin-bottom: 0.5rem;">No Dataset Uploaded</div>
+                <div style="font-size: 0.9rem; color: #94A3B8; max-width: 400px; margin: 0 auto;">Upload a CSV or Excel file from the sidebar to explore your dataset here. The AI model will automatically generate churn predictions.</div>
             </div>
             """, unsafe_allow_html=True)
         else:
             head_col, btn_col = st.columns([3.8, 1.2])
             with head_col:
-                st.markdown(f"<div style='font-size:1rem; font-weight:700; color:#1E293B; margin-top:4px;'><i class='fa-solid fa-table' style='color:#2563EB; margin-right:6px;'></i> Uploaded Data (Showing {len(df_filtered)} rows × {len(df_filtered.columns)} columns)</div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='font-size:1rem; font-weight:700; color:#F8FAFC; margin-top:4px;'><i class='fa-solid fa-table' style='color:#3B82F6; margin-right:6px;'></i> Uploaded Data (Showing {len(df_filtered)} rows × {len(df_filtered.columns)} columns)</div>", unsafe_allow_html=True)
             with btn_col:
                 csv_full = df_filtered.to_csv(index=False).encode('utf-8')
                 st.download_button(
@@ -1190,7 +1447,7 @@ elif navigation == "📁 Complete Dataset Explorer":
         if df_kaggle.empty:
             st.warning("Kaggle training dataset not found on server.")
         else:
-            st.markdown(f"<div style='font-size:1rem; font-weight:700; color:#1E293B; margin-top:4px;'><i class='fa-solid fa-graduation-cap' style='color:#3B82F6; margin-right:6px;'></i> Kaggle E-Commerce Churn Dataset ({len(df_kaggle):,} rows × {len(df_kaggle.columns)} columns)</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='font-size:1rem; font-weight:700; color:#F8FAFC; margin-top:4px;'><i class='fa-solid fa-graduation-cap' style='color:#3B82F6; margin-right:6px;'></i> Kaggle E-Commerce Churn Dataset ({len(df_kaggle):,} rows × {len(df_kaggle.columns)} columns)</div>", unsafe_allow_html=True)
             st.markdown("<div class='chart-insight'>This is the benchmark dataset used to <b>train</b> the EBM model. It contains ground-truth <code>Churn</code> labels for supervised learning.</div>", unsafe_allow_html=True)
             st.dataframe(df_kaggle, use_container_width=True, height=480)
             
@@ -1219,7 +1476,7 @@ elif navigation == "⚙️ Data Hub & AI Retraining":
     with col_up:
         st.markdown("<div class='react-card'>", unsafe_allow_html=True)
         st.markdown("<div class='react-card-title'><i class='fa-solid fa-file-excel' style='color:#10B981;'></i> Upload New Dataset</div>", unsafe_allow_html=True)
-        st.markdown("<span style='font-size: 0.8rem; color: #64748B;'>Upload the latest `.xlsx` or `.csv` dataset. The system will automatically merge it with the master record and handle duplicates based on CustomerID.</span>", unsafe_allow_html=True)
+        st.markdown("<span style='font-size: 0.8rem; color: #94A3B8;'>Upload the latest `.xlsx` or `.csv` dataset. The system will automatically merge it with the master record and handle duplicates based on CustomerID.</span>", unsafe_allow_html=True)
         
         uploaded_file = st.file_uploader("Drag and drop your file here", type=['csv', 'xlsx'], label_visibility="collapsed")
         
@@ -1297,12 +1554,13 @@ elif navigation == "⚙️ Data Hub & AI Retraining":
         st.markdown("<div class='react-card'>", unsafe_allow_html=True)
         st.markdown("<div class='react-card-title'><i class='fa-solid fa-circle-info' style='color:#3B82F6;'></i> How Incremental Learning Works</div>", unsafe_allow_html=True)
         st.markdown("""
-        <ul style="font-size: 0.82rem; color: #475569; line-height: 1.6; padding-left: 1.2rem;">
-            <li><b>1. Upload:</b> Drop your new month's transaction data (CSV or Excel).</li>
-            <li><b>2. Choose Action:</b> Decide whether to <b>Replace</b> the entire database (start fresh) or <b>Merge</b> with existing records.</li>
-            <li><b>3. Duplicate Handling (Merge Mode):</b> If a customer made a new purchase, their old record is replaced with the latest one to keep RFM scores accurate.</li>
-            <li><b>4. AI Intelligence:</b> The system runs the uploaded data against the trained Kaggle patterns to independently generate <code>Churn AI ML</code> predictions.</li>
-            <li><b>5. Dynamic Refresh:</b> All dashboard charts, KPI metrics, and Retargeting Action Center tables instantly update.</li>
+        <ul style="font-size: 0.82rem; color: #94A3B8; line-height: 1.6; padding-left: 1.2rem;">
+            <li><b style='color:#CBD5E1;'>1. Upload:</b> Drop your new month's transaction data (CSV or Excel).</li>
+            <li><b style='color:#CBD5E1;'>2. Choose Action:</b> Decide whether to <b>Replace</b> the entire database (start fresh) or <b>Merge</b> with existing records.</li>
+        <ul style="font-size: 0.85rem; color: #94A3B8; line-height: 1.6; padding-left: 1.2rem;">
+            <li><b style='color:#CBD5E1;'>Real-time Merging:</b> When you upload a new file, it detects existing users (by CustomerID) and updates their stats, while appending completely new users.</li>
+            <li><b style='color:#CBD5E1;'>Live Prediction:</b> The EBM AI model (trained globally on the Kaggle set) is immediately executed on the merged dataset to predict churn risks.</li>
+            <li><b style='color:#CBD5E1;'>Dashboards Update:</b> All insights, metric cards, and charts recalculate instantly.</li>
         </ul>
         """, unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
@@ -1311,12 +1569,18 @@ elif navigation == "⚙️ Data Hub & AI Retraining":
         if not df_master.empty:
             st.markdown("<div class='react-card'>", unsafe_allow_html=True)
             st.markdown("<div class='react-card-title'><i class='fa-solid fa-server' style='color:#8B5CF6;'></i> Master Database Status</div>", unsafe_allow_html=True)
-            st.markdown(f"**Total Customers Evaluated:** `{len(df_master):,}`")
-            st.markdown(f"**Total Features Tracking:** `{len(df_master.columns)}`")
-            st.markdown(f"**Active Inference Engine:** Explainable Boosting Classifier")
+            st.markdown(f"""
+            <div style="background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.2); padding: 1rem; border-radius: 12px; display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <div style="font-size: 0.75rem; color: #8B5CF6; font-weight: 700; text-transform: uppercase;">Current Volume</div>
+                    <div style="font-size: 1.8rem; font-weight: 800; color: #F8FAFC;">{len(df_master):,}</div>
+                </div>
+                <i class="fa-solid fa-database" style="font-size: 2.5rem; color: rgba(139, 92, 246, 0.4);"></i>
+            </div>
+            """, unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
 # 9. COMPACT SAAS FOOTER
 # -----------------------------------------------------------------------------
-st.markdown("<div style='margin-top: 2rem; border-top: 1px solid #E2E8F0; padding: 1rem 0; text-align: center; color: #64748B; font-size: 0.78rem;'><b>E-Commerce Churn AI Decision Support Framework</b> • Master of Engineering in Information Technology Thesis • MUET Jamshoro</div>", unsafe_allow_html=True)
+st.markdown("<div style='margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.08); padding: 1rem 0; text-align: center; color: #64748B; font-size: 0.78rem;'><b style='color:#94A3B8;'>E-Commerce Churn AI Decision Support Framework</b> • Master of Engineering in Information Technology Thesis • MUET Jamshoro</div>", unsafe_allow_html=True)
