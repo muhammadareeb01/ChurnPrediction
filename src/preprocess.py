@@ -43,23 +43,15 @@ def engineer_rfm_features(df: pd.DataFrame) -> pd.DataFrame:
         
     return df_feat
 
-def load_data(file_path: str = None, sheet_name: str = None) -> pd.DataFrame:
-    """Loads the raw Kaggle e-commerce dataset from Excel for Training."""
+def load_data(file_path: str = None) -> pd.DataFrame:
+    """Loads the raw Kaggle e-commerce dataset for Training."""
     if file_path is None:
-        if os.path.exists(os.path.join('data', 'raw', 'E Commerce Dataset.xlsx')):
-            file_path = os.path.join('data', 'raw', 'E Commerce Dataset.xlsx')
-            sheet_name = 'E Comm'
-        else:
-            file_path = 'E Commerce Dataset.xlsx'
-            sheet_name = 'E Comm'
-    
-    if sheet_name is None:
-        sheet_name = 'E Comm'
+        file_path = 'data_ecommerce_customer_churn.csv'
 
-    print(f"[*] Loading training dataset from: {file_path} (Sheet: '{sheet_name}')...")
+    print(f"[*] Loading training dataset from: {file_path} ...")
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"Dataset not found at {file_path}")
-    df = pd.read_excel(file_path, sheet_name=sheet_name)
+    df = pd.read_csv(file_path)
     print(f"[+] Dataset loaded successfully! Initial Shape: {df.shape[0]} rows, {df.shape[1]} columns.")
     return df
 
@@ -202,7 +194,7 @@ def main():
         "student": "Muhammad Tehmas (25MEIT003)",
         "university": "Mehran University of Engineering and Technology (MUET)",
         "supervisors": "Prof. Dr. Shahnawaz Talpur | Co-Supervisor: Engr. Madeha Memon",
-        "dataset_name": "EasyBazar E-Commerce Customer Churn Dataset (SME Baseline)",
+        "dataset_name": "Kaggle E-Commerce Customer Churn Dataset (Full Train)",
         "initial_records": int(df_raw.shape[0]),
         "total_features": int(X_train.shape[1]),
         "target_variable": "Churn (1 = Churned, 0 = Retained)",

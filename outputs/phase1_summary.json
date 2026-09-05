@@ -3,18 +3,44 @@
     "student": "Muhammad Tehmas (25MEIT003)",
     "university": "Mehran University of Engineering and Technology (MUET)",
     "supervisors": "Prof. Dr. Shahnawaz Talpur | Co-Supervisor: Engr. Madeha Memon",
-    "dataset_name": "EasyBazar E-Commerce Customer Churn Dataset (SME Baseline)",
-    "initial_records": 2000,
-    "total_features": 15,
+    "dataset_name": "Kaggle E-Commerce Customer Churn Dataset (Full Train)",
+    "initial_records": 3941,
+    "total_features": 12,
     "target_variable": "Churn (1 = Churned, 0 = Retained)",
-    "overall_churn_rate_pct": 32.25,
-    "missing_values_detected": {},
+    "overall_churn_rate_pct": 17.1,
+    "missing_values_detected": {
+        "Tenure": {
+            "count": 194,
+            "percentage": 4.92
+        },
+        "WarehouseToHome": {
+            "count": 169,
+            "percentage": 4.29
+        },
+        "DaySinceLastOrder": {
+            "count": 213,
+            "percentage": 5.4
+        }
+    },
     "imputation_strategy": "Hybrid PyTorch Denoising Autoencoder (Learn distributions, fallback to Median). Retains glassbox original features.",
-    "imputation_log": {},
+    "imputation_log": {
+        "Tenure": {
+            "imputed_value": 9.0,
+            "missing_filled": 194
+        },
+        "WarehouseToHome": {
+            "imputed_value": 14.0,
+            "missing_filled": 169
+        },
+        "DaySinceLastOrder": {
+            "imputed_value": 3.0,
+            "missing_filled": 213
+        }
+    },
     "encoding_strategy": "No One-Hot Encoding (Categorical text preserved for Explainable Boosting Machine interpretability)",
     "train_test_split_strategy": "80/20 Stratified Split",
-    "train_records": 1600,
-    "test_records": 400,
-    "train_churn_rate_pct": 32.25,
-    "test_churn_rate_pct": 32.25
+    "train_records": 3152,
+    "test_records": 789,
+    "train_churn_rate_pct": 17.1,
+    "test_churn_rate_pct": 17.11
 }

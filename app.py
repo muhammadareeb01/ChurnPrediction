@@ -357,18 +357,63 @@ def load_app_model():
     return None
 
 @st.cache_data
-def load_app_data():
-    if os.path.exists("Final_Dashboard_Data.csv"):
-        return pd.read_csv("Final_Dashboard_Data.csv")
-    elif os.path.exists("EasyBazar_EBM_Dataset.xlsx"):
+def process_uploaded_file(uploaded_file, _model):
+    if uploaded_file is None:
+        return pd.DataFrame()
+        
+    try:
+        if uploaded_file.name.endswith('.csv'):
+            df = pd.read_csv(uploaded_file)
+        else:
+            df = pd.read_excel(uploaded_file)
+            
+        # Median imputation for continuous
+        candidate_continuous = ['Tenure', 'WarehouseToHome', 'HourSpendOnApp', 'OrderAmountHikeFromlastYear', 'CouponUsed', 'OrderCount', 'DaySinceLastOrder', 'COD_Amount']
+        for col in candidate_continuous:
+            if col in df.columns and df[col].isnull().sum() > 0:
+                df[col] = df[col].fillna(df[col].median(numeric_only=True))
+                
+        # Clean string formatting
+        cat_cols = df.select_dtypes(include=['object']).columns
+        for col in cat_cols:
+            df[col] = df[col].astype(str).str.strip()
+            
+        # Engineer RFM features
         try:
-            return pd.read_excel("EasyBazar_EBM_Dataset.xlsx", sheet_name="EBM_Churn_Data")
+            from src.preprocess import engineer_rfm_features
+            df = engineer_rfm_features(df)
         except Exception:
-            return pd.read_excel("EasyBazar_EBM_Dataset.xlsx")
-    return pd.DataFrame()
+            pass
+            
+        # Generate predictions
+        if _model is not None:
+            model_features = getattr(_model, 'feature_names_in_', None) or getattr(_model, 'feature_names', None)
+            if model_features is not None:
+                X = df.copy()
+                for mf in model_features:
+                    if mf not in X.columns:
+                        X[mf] = 'Unknown' if mf == 'ProductName' else 0
+                    else:
+                        if mf != 'ProductName':
+                            X[mf] = pd.to_numeric(X[mf], errors='coerce').fillna(0)
+                        else:
+                            X[mf] = X[mf].astype(str)
+                X = X[model_features]
+                for col in X.select_dtypes(include=['object']).columns:
+                    X[col] = X[col].astype(str)
+                
+                df['Churn AI ML'] = _model.predict(X)
+                if hasattr(_model, 'predict_proba'):
+                    try:
+                        df['Churn_Probability'] = np.round(_model.predict_proba(X)[:, 1] * 100, 1)
+                    except Exception:
+                        pass
+        return df
+    except Exception as e:
+        st.sidebar.error(f"Error processing file: {e}")
+        return pd.DataFrame()
 
 model = load_app_model()
-df_master = load_app_data()
 
 # -----------------------------------------------------------------------------
 # 3. SAAS SIDEBAR NAVIGATION
@@ -389,6 +434,13 @@ with st.sidebar:
         EBM Inference Engine: Online
     </div>
     """, unsafe_allow_html=True)
+    
+    st.markdown("<div style='font-size: 0.72rem; font-weight: 700; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.6rem;'><i class='fa-solid fa-cloud-arrow-up' style='margin-right: 4px;'></i> Upload Test Dataset</div>", unsafe_allow_html=True)
+    uploaded_file = st.file_uploader("Upload CSV/Excel", type=["csv", "xlsx"], label_visibility="collapsed")
+    df_master = process_uploaded_file(uploaded_file, model)
+    
+    if len(df_master) == 0:
+        st.sidebar.warning("⚠️ Please upload a dataset to view dashboard insights.")
     
     navigation = st.radio(
         "NAVIGATION",
